@@ -23,8 +23,13 @@
     <PackageId>MichaelGlass.FSharp.Analyzers</PackageId>
     <Version>0.1.0-alpha.1</Version>
     <Authors>Michael Glass</Authors>
+    <Description>F# analyzers for common pitfalls: wildcard matches, ignored Tasks, raw SQL, missing error reporting, restricted calls</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/michaelglass/fsharp-analyzers</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <Target Name="_AddAnalyzersToOutput">
@@ -52,6 +57,7 @@
   <ItemGroup>
     <PackageReference Include="FSharp.Analyzers.SDK" Version="0.36.0" />
     <PackageReference Include="editorconfig" Version="0.15.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.201" PrivateAssets="All" />
     <PackageReference Update="FSharp.Core" Version="10.0.101" />
   </ItemGroup>
 

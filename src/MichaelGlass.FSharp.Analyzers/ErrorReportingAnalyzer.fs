@@ -1,7 +1,13 @@
-/// Analyzer that flags try/with blocks where catch handlers don't call
-/// a configured error-reporting function.
-/// Opt-in: reads mga_error_reporting_functions from .editorconfig.
-/// Code: MGA-ERROR-REPORT-001
+/// <summary>
+/// Flags try/with blocks where catch handlers don't call a configured error-reporting
+/// function. Silent catches hide production failures — this ensures every exception
+/// handler reports to your observability stack.
+/// </summary>
+/// <remarks>
+/// <para>Code: <c>MGA-ERROR-REPORT-001</c></para>
+/// <para>Opt-in: set <c>mga_error_reporting_functions</c> in .editorconfig (e.g. <c>captureError, logError</c>).</para>
+/// <para>Suppress with <c>// MGA-ERROR-REPORT-001:ok</c>.</para>
+/// </remarks>
 module MichaelGlass.FSharp.Analyzers.ErrorReportingAnalyzer
 
 open FSharp.Analyzers.SDK
@@ -12,11 +18,11 @@ let private getRequiredFunctions (fileName: string) =
     EditorConfig.getListProperty fileName "mga_error_reporting_functions"
     |> Set.ofList
 
-let private isRequiredCall (requiredFunctions: Set<string>) (name: string) =
-    Set.contains name requiredFunctions
+let private isRequiredCall (requiredFunctions: Set<string>) (name: string) = Set.contains name requiredFunctions
 
-/// Recursively check if an expression contains a call to any required function.
-/// This is a targeted search within an expression, separate from the tree walker.
+/// <summary>
+/// Recursively checks if an expression contains a call to any required error-reporting function.
+/// </summary>
 let rec private containsRequiredCall (requiredFunctions: Set<string>) (expr: SynExpr) : bool =
     let recurse = containsRequiredCall requiredFunctions
     let isRequired = isRequiredCall requiredFunctions
@@ -25,8 +31,7 @@ let rec private containsRequiredCall (requiredFunctions: Set<string>) (expr: Syn
     | SynExpr.Ident id -> isRequired id.idText
     | SynExpr.LongIdent(longDotId = SynLongIdent(id = ids)) -> ids |> List.exists (fun id -> isRequired id.idText)
     | SynExpr.DotGet(expr = inner; longDotId = SynLongIdent(id = ids)) ->
-        ids |> List.exists (fun id -> isRequired id.idText)
-        || recurse inner
+        ids |> List.exists (fun id -> isRequired id.idText) || recurse inner
     | SynExpr.App(funcExpr = func; argExpr = arg) -> recurse func || recurse arg
     | SynExpr.Paren(expr = inner) -> recurse inner
     | SynExpr.Typed(expr = inner) -> recurse inner
@@ -43,12 +48,10 @@ let rec private containsRequiredCall (requiredFunctions: Set<string>) (expr: Syn
     | SynExpr.Match(clauses = clauses)
     | SynExpr.MatchLambda(matchClauses = clauses)
     | SynExpr.MatchBang(clauses = clauses) ->
-        clauses
-        |> List.exists (fun (SynMatchClause(resultExpr = body)) -> recurse body)
+        clauses |> List.exists (fun (SynMatchClause(resultExpr = body)) -> recurse body)
     | SynExpr.TryWith(tryExpr = body; withCases = clauses) ->
         recurse body
-        || clauses
-           |> List.exists (fun (SynMatchClause(resultExpr = body)) -> recurse body)
+        || clauses |> List.exists (fun (SynMatchClause(resultExpr = body)) -> recurse body)
     | SynExpr.TryFinally(tryExpr = body; finallyExpr = fin) -> recurse body || recurse fin
     | SynExpr.ComputationExpr(expr = expr) -> recurse expr
     | SynExpr.Lambda(body = body) -> recurse body
@@ -69,8 +72,12 @@ let rec private containsRequiredCall (requiredFunctions: Set<string>) (expr: Syn
                | None -> false)
     | _ -> false
 
-/// Core analysis logic, exposed for testing.
-/// Takes requiredFunctions explicitly so tests can provide them without editorconfig.
+/// <summary>
+/// Core analysis logic, exposed for direct testing without editorconfig.
+/// </summary>
+/// <param name="requiredFunctions">Set of function names that must appear in catch handlers.</param>
+/// <param name="context">The CLI analyzer context.</param>
+/// <returns>List of warning messages for non-compliant try/with blocks.</returns>
 let analyze (requiredFunctions: Set<string>) (context: CliContext) : Message list =
     if Set.isEmpty requiredFunctions then
         []
@@ -94,8 +101,7 @@ let analyze (requiredFunctions: Set<string>) (context: CliContext) : Message lis
 
         ranges
         |> Seq.toList
-        |> List.filter (fun range ->
-            not (Suppression.isLineSuppressed context.SourceText range "MGA-ERROR-REPORT-001"))
+        |> List.filter (fun range -> not (Suppression.isLineSuppressed context.SourceText range "MGA-ERROR-REPORT-001"))
         |> List.map (fun range ->
             { Type = "Missing error reporting"
               Message =
@@ -105,6 +111,10 @@ let analyze (requiredFunctions: Set<string>) (context: CliContext) : Message lis
               Range = range
               Fixes = [] })
 
+/// <summary>
+/// CLI analyzer entry point. Reads required functions from editorconfig,
+/// then delegates to <see cref="analyze"/>.
+/// </summary>
 [<CliAnalyzer("ErrorReportingAnalyzer",
               "Flags try/with blocks that don't call a configured error-reporting function (opt-in via editorconfig).")>]
 let errorReportingAnalyzer: Analyzer<CliContext> =

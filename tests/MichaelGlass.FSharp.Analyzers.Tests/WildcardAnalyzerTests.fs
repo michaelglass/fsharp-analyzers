@@ -8,11 +8,7 @@ open MichaelGlass.FSharp.Analyzers.WildcardAnalyzer
 
 [<Fact>]
 let ``flags wildcard on custom DU`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "wildcard", "WildcardOnDU.fs")
-        )
-
+    let source = readTestData [ "wildcard"; "WildcardOnDU.fs" ]
     let context = getContextForSource source
     let messages = wildcardAnalyzer context |> Async.RunSynchronously
 
@@ -22,11 +18,7 @@ let ``flags wildcard on custom DU`` () =
 
 [<Fact>]
 let ``does not flag wildcard on option type`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "wildcard", "WildcardOnOption.fs")
-        )
-
+    let source = readTestData [ "wildcard"; "WildcardOnOption.fs" ]
     let context = getContextForSource source
     let messages = wildcardAnalyzer context |> Async.RunSynchronously
 
@@ -34,11 +26,7 @@ let ``does not flag wildcard on option type`` () =
 
 [<Fact>]
 let ``does not flag suppressed wildcard`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "wildcard", "WildcardSuppressed.fs")
-        )
-
+    let source = readTestData [ "wildcard"; "WildcardSuppressed.fs" ]
     let context = getContextForSource source
     let messages = wildcardAnalyzer context |> Async.RunSynchronously
 

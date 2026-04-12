@@ -10,11 +10,7 @@ let private requiredFunctions = Set.ofList [ "logError"; "captureError" ]
 
 [<Fact>]
 let ``flags try/with missing error reporting call`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "error-reporting", "MissingErrorReport.fs")
-        )
-
+    let source = readTestData [ "error-reporting"; "MissingErrorReport.fs" ]
     let context = getContextForSource source
     let messages = analyze requiredFunctions context
 
@@ -24,11 +20,7 @@ let ``flags try/with missing error reporting call`` () =
 
 [<Fact>]
 let ``does not flag try/with that calls error reporting function`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "error-reporting", "HasErrorReport.fs")
-        )
-
+    let source = readTestData [ "error-reporting"; "HasErrorReport.fs" ]
     let context = getContextForSource source
     let messages = analyze requiredFunctions context
 
@@ -36,11 +28,7 @@ let ``does not flag try/with that calls error reporting function`` () =
 
 [<Fact>]
 let ``multi-clause try/with emits exactly one diagnostic`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "error-reporting", "MultiClauseMissingReport.fs")
-        )
-
+    let source = readTestData [ "error-reporting"; "MultiClauseMissingReport.fs" ]
     let context = getContextForSource source
     let messages = analyze requiredFunctions context
 
@@ -49,11 +37,7 @@ let ``multi-clause try/with emits exactly one diagnostic`` () =
 
 [<Fact>]
 let ``returns empty when no required functions configured`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "error-reporting", "no-config", "NoConfig.fs")
-        )
-
+    let source = readTestData [ "error-reporting"; "no-config"; "NoConfig.fs" ]
     let context = getContextForSource source
     let messages = analyze Set.empty context
 

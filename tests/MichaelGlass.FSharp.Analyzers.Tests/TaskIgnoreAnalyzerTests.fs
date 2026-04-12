@@ -8,11 +8,7 @@ open MichaelGlass.FSharp.Analyzers.TaskIgnoreAnalyzer
 
 [<Fact>]
 let ``flags ignore on Task value`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "task-ignore", "IgnoredTask.fs")
-        )
-
+    let source = readTestData [ "task-ignore"; "IgnoredTask.fs" ]
     let context = getContextForSource source
     let messages = taskIgnoreAnalyzer context |> Async.RunSynchronously
 
@@ -22,11 +18,7 @@ let ``flags ignore on Task value`` () =
 
 [<Fact>]
 let ``does not flag ignore on non-Task value`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "task-ignore", "IgnoredNonTask.fs")
-        )
-
+    let source = readTestData [ "task-ignore"; "IgnoredNonTask.fs" ]
     let context = getContextForSource source
     let messages = taskIgnoreAnalyzer context |> Async.RunSynchronously
 
@@ -34,11 +26,7 @@ let ``does not flag ignore on non-Task value`` () =
 
 [<Fact>]
 let ``does not flag suppressed Task ignore`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "task-ignore", "IgnoredTaskSuppressed.fs")
-        )
-
+    let source = readTestData [ "task-ignore"; "IgnoredTaskSuppressed.fs" ]
     let context = getContextForSource source
     let messages = taskIgnoreAnalyzer context |> Async.RunSynchronously
 

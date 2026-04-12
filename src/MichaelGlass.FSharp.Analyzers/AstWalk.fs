@@ -1,11 +1,18 @@
+/// <summary>
+/// Shared AST traversal utility that walks the full F# untyped parse tree.
+/// Analyzers provide a visitor function; this module handles all recursive descent.
+/// </summary>
 module MichaelGlass.FSharp.Analyzers.AstWalk
 
 open FSharp.Compiler.Syntax
 
-/// Walk the parse tree calling visitExpr on every SynExpr node.
-/// If visitExpr returns false, children of that node are NOT recursed into.
-/// The walker handles all recursive descent — the visitor only needs to handle
-/// expressions it cares about.
+/// <summary>
+/// Walks every <see cref="T:FSharp.Compiler.Syntax.SynExpr"/> node in the parse tree.
+/// The visitor controls recursion: return true to descend into children,
+/// false to prune that subtree.
+/// </summary>
+/// <param name="visitExpr">Called on each expression. Return false to skip children.</param>
+/// <param name="parseTree">The parsed F# source file.</param>
 let walkParseTree (visitExpr: SynExpr -> bool) (parseTree: ParsedInput) : unit =
     let rec walkExpr (expr: SynExpr) =
         let recurse = visitExpr expr
