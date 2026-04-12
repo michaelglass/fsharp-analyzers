@@ -1,0 +1,1 @@
+module MichaelGlass.FSharp.Analyzers.Suppression
