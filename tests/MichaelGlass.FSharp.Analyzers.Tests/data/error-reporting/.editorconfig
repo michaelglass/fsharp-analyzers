@@ -1,0 +1,4 @@
+root = true
+
+[*.fs]
+mga_error_reporting_functions = logError, captureError
