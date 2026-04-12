@@ -8,11 +8,7 @@ open MichaelGlass.FSharp.Analyzers.RawSqlAnalyzer
 
 [<Fact>]
 let ``flags raw SQL string`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "rawsql", "RawSqlString.fs")
-        )
-
+    let source = readTestData [ "rawsql"; "RawSqlString.fs" ]
     let context = getContextForSource source
     let messages = rawSqlAnalyzer context |> Async.RunSynchronously
 
@@ -22,11 +18,7 @@ let ``flags raw SQL string`` () =
 
 [<Fact>]
 let ``does not flag non-SQL string`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "rawsql", "NonSqlString.fs")
-        )
-
+    let source = readTestData [ "rawsql"; "NonSqlString.fs" ]
     let context = getContextForSource source
     let messages = rawSqlAnalyzer context |> Async.RunSynchronously
 
@@ -34,11 +26,7 @@ let ``does not flag non-SQL string`` () =
 
 [<Fact>]
 let ``does not flag suppressed SQL string`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "rawsql", "RawSqlSuppressed.fs")
-        )
-
+    let source = readTestData [ "rawsql"; "RawSqlSuppressed.fs" ]
     let context = getContextForSource source
     let messages = rawSqlAnalyzer context |> Async.RunSynchronously
 

@@ -1,5 +1,14 @@
-/// Analyzer that flags restricted function calls based on editorconfig configuration.
-/// Code: MGA-UNSAFE-CALL-001
+/// <summary>
+/// Flags restricted function calls based on editorconfig configuration.
+/// Three independent checks: banned functions, banned call patterns (function + argument
+/// value), and unsafe dynamic arguments (non-literal values passed to injection-sensitive functions).
+/// </summary>
+/// <remarks>
+/// <para>Code: <c>MGA-UNSAFE-CALL-001</c></para>
+/// <para>Opt-in via .editorconfig: <c>mga_banned_functions</c>, <c>mga_banned_call_patterns</c>,
+/// <c>mga_unsafe_dynamic_arg_functions</c>.</para>
+/// <para>Suppress with <c>// MGA-UNSAFE-CALL-001:ok</c>.</para>
+/// </remarks>
 module MichaelGlass.FSharp.Analyzers.RestrictedCallAnalyzer
 
 open FSharp.Analyzers.SDK
@@ -9,6 +18,7 @@ open FSharp.Compiler.Text
 [<Literal>]
 let Code = "MGA-UNSAFE-CALL-001"
 
+/// <summary>Configuration for the three restricted call checks.</summary>
 type Config =
     { BannedFunctions: Set<string>
       BannedCallPatterns: Map<string, string>
@@ -46,8 +56,10 @@ let private getFuncName (expr: SynExpr) : string option =
         ids |> List.map (fun i -> i.idText) |> String.concat "." |> Some
     | _ -> None
 
+/// <summary>
 /// Supports suffix matching for qualified names.
-/// e.g. "Task.WhenAll" matches both "Task.WhenAll" and "System.Threading.Tasks.Task.WhenAll"
+/// E.g. "Task.WhenAll" matches both "Task.WhenAll" and "System.Threading.Tasks.Task.WhenAll".
+/// </summary>
 let private matchesFuncName (configuredName: string) (actualName: string) =
     actualName = configuredName || actualName.EndsWith("." + configuredName)
 
@@ -62,10 +74,14 @@ let private getStringValue (expr: SynExpr) =
     | _ -> None
 
 [<NoComparison; NoEquality>]
-type private Diagnostic =
-    { Range: range; Message: string }
+type private Diagnostic = { Range: range; Message: string }
 
-/// Analyze a context with the given config. Exposed for testing.
+/// <summary>
+/// Core analysis logic, exposed for direct testing without editorconfig.
+/// </summary>
+/// <param name="config">The restricted call configuration.</param>
+/// <param name="context">The CLI analyzer context.</param>
+/// <returns>List of warning messages for restricted calls found.</returns>
 let analyze (config: Config) (context: CliContext) : Message list =
     if isConfigEmpty config then
         []
@@ -96,11 +112,10 @@ let analyze (config: Config) (context: CliContext) : Message list =
                     | Some name ->
                         match
                             config.BannedCallPatterns
-                            |> Map.tryFindKey (fun pattern _ -> matchesFuncName pattern name)
+                            |> Map.tryPick (fun pattern value ->
+                                if matchesFuncName pattern name then Some value else None)
                         with
-                        | Some key ->
-                            let expectedValue = config.BannedCallPatterns.[key]
-
+                        | Some expectedValue ->
                             match getStringValue argExpr with
                             | Some actualValue when actualValue = expectedValue ->
                                 diagnostics.Add(
@@ -138,8 +153,11 @@ let analyze (config: Config) (context: CliContext) : Message list =
               Range = d.Range
               Fixes = [] })
 
-[<CliAnalyzer("RestrictedCallAnalyzer",
-              "Flags restricted function calls based on editorconfig configuration (opt-in).")>]
+/// <summary>
+/// CLI analyzer entry point. Reads configuration from editorconfig,
+/// then delegates to <see cref="analyze"/>.
+/// </summary>
+[<CliAnalyzer("RestrictedCallAnalyzer", "Flags restricted function calls based on editorconfig configuration (opt-in).")>]
 let restrictedCallAnalyzer: Analyzer<CliContext> =
     fun (context: CliContext) ->
         async {

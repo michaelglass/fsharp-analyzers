@@ -1,6 +1,13 @@
-/// Analyzer that flags raw SQL strings in source files.
-/// Prefer type-safe query builders instead of raw SQL strings.
-/// Code: MGA-RAWSQL-001
+/// <summary>
+/// Flags raw SQL strings in source code. Raw SQL is vulnerable to injection,
+/// hard to refactor, and invisible to the type system. Prefer type-safe query
+/// builders or at minimum a dedicated SQL module.
+/// </summary>
+/// <remarks>
+/// <para>Code: <c>MGA-RAWSQL-001</c></para>
+/// <para>Exclude files (e.g. migrations) via <c>mga_rawsql_excluded_files</c> in .editorconfig.</para>
+/// <para>Suppress with <c>// MGA-RAWSQL-001:ok</c>.</para>
+/// </remarks>
 module MichaelGlass.FSharp.Analyzers.RawSqlAnalyzer
 
 open System
@@ -29,12 +36,13 @@ let private isFileExcluded (fileName: string) =
     let excludedFiles =
         EditorConfig.getListProperty fileName "mga_rawsql_excluded_files"
 
-    if List.isEmpty excludedFiles then
-        false
-    else
-        let currentFile = System.IO.Path.GetFileName(fileName)
-        List.contains currentFile excludedFiles
+    let currentFile = System.IO.Path.GetFileName(fileName)
+    List.contains currentFile excludedFiles
 
+/// <summary>
+/// CLI analyzer entry point. Scans string constants and interpolated strings
+/// for SQL keywords (SELECT, INSERT, UPDATE, DELETE, etc.).
+/// </summary>
 [<CliAnalyzer("RawSqlAnalyzer",
               "Flags raw SQL strings in source files. Prefer type-safe query builders instead of raw SQL.")>]
 let rawSqlAnalyzer: Analyzer<CliContext> =

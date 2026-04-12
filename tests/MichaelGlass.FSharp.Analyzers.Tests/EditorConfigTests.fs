@@ -5,7 +5,7 @@ open Swensen.Unquote
 open MichaelGlass.FSharp.Analyzers.EditorConfig
 
 let private sampleFile =
-    System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "editorconfig-test", "Sample.fs")
+    System.IO.Path.Combine [| __SOURCE_DIRECTORY__; "data"; "editorconfig-test"; "Sample.fs" |]
 
 [<Fact>]
 let ``getListProperty returns configured comma-separated values`` () =
@@ -15,7 +15,7 @@ let ``getListProperty returns configured comma-separated values`` () =
 [<Fact>]
 let ``getListProperty returns empty list for missing key`` () =
     let result = getListProperty sampleFile "nonexistent_key"
-    test <@ result = [] @>
+    test <@ List.isEmpty result @>
 
 [<Fact>]
 let ``getProperty returns Some for present key`` () =

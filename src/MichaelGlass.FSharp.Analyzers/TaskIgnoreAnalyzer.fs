@@ -1,42 +1,99 @@
-/// Analyzer that flags `|> ignore` on Task/Async values that silently swallow exceptions.
-/// Use `fireAndForget` for observed background tasks or `let! _ =` to explicitly discard.
-/// Code: MGA-TASK-IGNORE-001
+/// <summary>
+/// Flags <c>|> ignore</c> on Task and Async values that silently swallow exceptions.
+/// An ignored Task's exceptions vanish — they won't crash the process or appear in logs.
+/// Use <c>fireAndForget</c> for observed background work or <c>let! _ =</c> to explicitly discard.
+/// </summary>
+/// <remarks>
+/// <para>Code: <c>MGA-TASK-IGNORE-001</c></para>
+/// <para>Always enabled — no configuration needed.</para>
+/// <para>Suppress with <c>// MGA-TASK-IGNORE-001:ok</c>.</para>
+/// </remarks>
 module MichaelGlass.FSharp.Analyzers.TaskIgnoreAnalyzer
 
 open FSharp.Analyzers.SDK
+open FSharp.Compiler.Symbols
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text
 
-let private taskPatterns =
-    [| "Task.Run"
-       "Task.Factory"
-       "Task.Delay"
-       "ContinueWith"
-       ":> Task"
-       ":> System.Threading.Tasks.Task"
-       "Async.StartAsTask"
-       "Async.Start("
-       "startAsTask"
-       "StartAsTask"
-       "task {"
-       "async {" |]
+let private taskTypeNames =
+    Set.ofList
+        [ "System.Threading.Tasks.Task"
+          "System.Threading.Tasks.Task`1"
+          "System.Threading.Tasks.ValueTask"
+          "System.Threading.Tasks.ValueTask`1"
+          "Microsoft.FSharp.Control.FSharpAsync`1" ]
 
-let private getSourceText (sourceText: ISourceText) (range: range) : string =
+/// <summary>
+/// Checks if a type (or any of its base types) is a Task or Async type.
+/// </summary>
+let private isTaskLikeType (fsharpType: FSharpType) : bool =
     try
-        let startLine = range.StartLine - 1
-        let endLine = range.EndLine - 1
-        let lineCount = sourceText.GetLineCount()
-        let lines = ResizeArray<string>()
+        let rec checkType (t: FSharpType) =
+            if t.HasTypeDefinition then
+                let fullName =
+                    match t.TypeDefinition.TryFullName with
+                    | Some name -> Some name
+                    | None ->
+                        try
+                            Some(t.TypeDefinition.AccessPath + "." + t.TypeDefinition.CompiledName)
+                        with _ ->
+                            None
 
-        for i in max 0 startLine .. min endLine (lineCount - 1) do
-            lines.Add(sourceText.GetLineString(i))
+                match fullName with
+                | Some name when Set.contains name taskTypeNames -> true
+                | _ ->
+                    match t.BaseType with
+                    | Some baseType -> checkType baseType
+                    | None -> false
+            else
+                false
 
-        System.String.Join("\n", lines)
+        checkType fsharpType
     with _ ->
-        ""
+        false
 
-let private containsTaskPattern (text: string) : bool =
-    taskPatterns |> Array.exists text.Contains
+/// <summary>
+/// Gets the return type of a function type (the last generic argument).
+/// For <c>A -> B -> C</c>, returns <c>C</c>.
+/// </summary>
+let private getReturnType (fsharpType: FSharpType) : FSharpType option =
+    try
+        let rec loop (t: FSharpType) =
+            if t.IsFunctionType && t.GenericArguments.Count >= 2 then
+                loop t.GenericArguments.[t.GenericArguments.Count - 1]
+            else
+                Some t
+
+        if fsharpType.IsFunctionType then
+            loop fsharpType
+        else
+            Some fsharpType
+    with _ ->
+        None
+
+/// <summary>
+/// Checks whether any function call within the given range returns a Task-like type.
+/// Searches typed symbol uses for function/method calls whose return type is Task/Async.
+/// </summary>
+let private isExprRangeTaskLike (context: CliContext) (exprRange: range) : bool =
+    try
+        context.GetAllSymbolUsesOfFile()
+        |> Seq.exists (fun symbolUse ->
+            let r = symbolUse.Range
+
+            r.StartLine >= exprRange.StartLine
+            && r.StartLine <= exprRange.EndLine
+            && (r.StartLine > exprRange.StartLine || r.StartColumn >= exprRange.StartColumn)
+            && (r.StartLine < exprRange.EndLine || r.EndColumn <= exprRange.EndColumn)
+            && (match symbolUse.Symbol with
+                | :? FSharpMemberOrFunctionOrValue as mfv when mfv.FullType.IsFunctionType ->
+                    match getReturnType mfv.FullType with
+                    | Some retType -> isTaskLikeType retType
+                    | None -> false
+                | :? FSharpMemberOrFunctionOrValue as mfv -> isTaskLikeType mfv.FullType
+                | _ -> false))
+    with _ ->
+        false
 
 let private isIgnoreIdent (expr: SynExpr) =
     match expr with
@@ -63,8 +120,12 @@ let private isPipeRight (expr: SynExpr) =
 [<NoComparison>]
 type private IgnoreUsage =
     { FullRange: range
-      IgnoredRange: range }
+      IgnoredExprRange: range }
 
+/// <summary>
+/// CLI analyzer entry point. Walks AST for <c>ignore</c> calls and uses typed
+/// check results to flag those applied to Task/Async expressions.
+/// </summary>
 [<CliAnalyzer("TaskIgnoreAnalyzer",
               "Flags |> ignore on Task/Async values that silently swallow exceptions. Use fireAndForget or let! _ = instead.")>]
 let taskIgnoreAnalyzer: Analyzer<CliContext> =
@@ -81,15 +142,15 @@ let taskIgnoreAnalyzer: Analyzer<CliContext> =
                         ->
                         usages.Add(
                             { FullRange = expr.Range
-                              IgnoredRange = innerExpr.Range }
+                              IgnoredExprRange = innerExpr.Range }
                         )
 
-                        false // Don't recurse into the ignored sub-expression
+                        false
                     // Pattern: ignore expr (direct call)
                     | SynExpr.App(funcExpr = funcExpr; argExpr = argExpr) when isIgnoreIdent funcExpr ->
                         usages.Add(
                             { FullRange = expr.Range
-                              IgnoredRange = argExpr.Range }
+                              IgnoredExprRange = argExpr.Range }
                         )
 
                         false
@@ -100,8 +161,7 @@ let taskIgnoreAnalyzer: Analyzer<CliContext> =
                 usages
                 |> Seq.toList
                 |> List.filter (fun usage ->
-                    let text = getSourceText context.SourceText usage.IgnoredRange
-                    containsTaskPattern text
+                    isExprRangeTaskLike context usage.IgnoredExprRange
                     && not (Suppression.isLineSuppressed context.SourceText usage.FullRange "MGA-TASK-IGNORE-001"))
                 |> List.map (fun usage ->
                     { Type = "Task |> ignore"

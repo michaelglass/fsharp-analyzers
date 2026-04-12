@@ -13,11 +13,7 @@ let private configWithAll =
 
 [<Fact>]
 let ``flags banned function`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "restricted-call", "BannedFunction.fs")
-        )
-
+    let source = readTestData [ "restricted-call"; "BannedFunction.fs" ]
     let context = getContextForSource source
     let messages = analyze configWithAll context
 
@@ -27,11 +23,7 @@ let ``flags banned function`` () =
 
 [<Fact>]
 let ``flags banned function via pipe`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "restricted-call", "BannedFunctionPiped.fs")
-        )
-
+    let source = readTestData [ "restricted-call"; "BannedFunctionPiped.fs" ]
     let context = getContextForSource source
     let messages = analyze configWithAll context
 
@@ -41,11 +33,7 @@ let ``flags banned function via pipe`` () =
 
 [<Fact>]
 let ``flags banned call pattern`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "restricted-call", "BannedCallPattern.fs")
-        )
-
+    let source = readTestData [ "restricted-call"; "BannedCallPattern.fs" ]
     let context = getContextForSource source
     let messages = analyze configWithAll context
 
@@ -55,11 +43,7 @@ let ``flags banned call pattern`` () =
 
 [<Fact>]
 let ``flags unsafe dynamic arg`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "restricted-call", "UnsafeDynamicArg.fs")
-        )
-
+    let source = readTestData [ "restricted-call"; "UnsafeDynamicArg.fs" ]
     let context = getContextForSource source
     let messages = analyze configWithAll context
 
@@ -69,11 +53,7 @@ let ``flags unsafe dynamic arg`` () =
 
 [<Fact>]
 let ``does not flag safe static arg`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "restricted-call", "SafeStaticArg.fs")
-        )
-
+    let source = readTestData [ "restricted-call"; "SafeStaticArg.fs" ]
     let context = getContextForSource source
     let messages = analyze configWithAll context
 
@@ -81,10 +61,7 @@ let ``does not flag safe static arg`` () =
 
 [<Fact>]
 let ``returns empty with no config`` () =
-    let source =
-        System.IO.File.ReadAllText(
-            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "restricted-call", "no-config", "NoConfig.fs")
-        )
+    let source = readTestData [ "restricted-call"; "no-config"; "NoConfig.fs" ]
 
     let emptyConfig =
         { BannedFunctions = Set.empty
