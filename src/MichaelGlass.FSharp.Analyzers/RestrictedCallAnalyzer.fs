@@ -70,19 +70,26 @@ type private Diagnostic =
 
 /// Recursively walk expressions looking for restricted calls
 let rec private walkExpr (config: Config) (diagnostics: ResizeArray<Diagnostic>) (expr: SynExpr) =
-    // Check SynExpr.App for all three modes
+    // Check for banned function references (standalone idents, not just in App position)
     match expr with
-    | SynExpr.App(funcExpr = funcExpr; argExpr = argExpr) ->
-        match getFuncName funcExpr with
+    | SynExpr.Ident _
+    | SynExpr.LongIdent _ ->
+        match getFuncName expr with
         | Some name ->
-            // Mode 1: Banned function called as application
             if config.BannedFunctions |> Set.exists (fun banned -> matchesFuncName banned name) then
                 diagnostics.Add(
                     { Range = expr.Range
                       Message =
                         $"Banned function call '%s{name}' is not allowed. Add '// %s{Code}:ok' with a reason to suppress." }
                 )
+        | None -> ()
+    | _ -> ()
 
+    // Check SynExpr.App for all three modes
+    match expr with
+    | SynExpr.App(funcExpr = funcExpr; argExpr = argExpr) ->
+        match getFuncName funcExpr with
+        | Some name ->
             // Mode 2: Banned call pattern
             match
                 config.BannedCallPatterns
@@ -161,9 +168,14 @@ let rec private walkExpr (config: Config) (diagnostics: ResizeArray<Diagnostic>)
     | SynExpr.ComputationExpr(expr = expr) -> walkExpr config diagnostics expr
     | SynExpr.Lambda(body = body) -> walkExpr config diagnostics body
     | SynExpr.Assert(expr = expr) -> walkExpr config diagnostics expr
-    | SynExpr.Match(clauses = clauses)
-    | SynExpr.MatchLambda(matchClauses = clauses)
-    | SynExpr.MatchBang(clauses = clauses) ->
+    | SynExpr.Match(expr = scrutinee; clauses = clauses)
+    | SynExpr.MatchBang(expr = scrutinee; clauses = clauses) ->
+        walkExpr config diagnostics scrutinee
+
+        for clause in clauses do
+            match clause with
+            | SynMatchClause(resultExpr = body) -> walkExpr config diagnostics body
+    | SynExpr.MatchLambda(matchClauses = clauses) ->
         for clause in clauses do
             match clause with
             | SynMatchClause(resultExpr = body) -> walkExpr config diagnostics body

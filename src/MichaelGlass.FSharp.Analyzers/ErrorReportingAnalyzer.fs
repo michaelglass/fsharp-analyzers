@@ -80,12 +80,9 @@ let rec private walkExpr
 
     match expr with
     | SynExpr.TryWith(tryExpr = body; withCases = clauses; range = tryWithRange) ->
-        // Check each handler individually
-        for clause in clauses do
-            match clause with
-            | SynMatchClause(resultExpr = handlerBody) ->
-                if not (containsRequiredCall requiredFunctions handlerBody) then
-                    ranges.Add(tryWithRange)
+        if clauses |> List.exists (fun (SynMatchClause(resultExpr = handlerBody)) ->
+            not (containsRequiredCall requiredFunctions handlerBody)) then
+            ranges.Add(tryWithRange)
 
         // Still walk the body and handler bodies for nested try/with
         walk body
@@ -137,9 +134,14 @@ let rec private walkExpr
     | SynExpr.ComputationExpr(expr = expr) -> walk expr
     | SynExpr.Lambda(body = body) -> walk body
     | SynExpr.Assert(expr = expr) -> walk expr
-    | SynExpr.Match(clauses = clauses)
-    | SynExpr.MatchLambda(matchClauses = clauses)
-    | SynExpr.MatchBang(clauses = clauses) ->
+    | SynExpr.Match(expr = scrutinee; clauses = clauses)
+    | SynExpr.MatchBang(expr = scrutinee; clauses = clauses) ->
+        walk scrutinee
+
+        for clause in clauses do
+            match clause with
+            | SynMatchClause(resultExpr = body) -> walk body
+    | SynExpr.MatchLambda(matchClauses = clauses) ->
         for clause in clauses do
             match clause with
             | SynMatchClause(resultExpr = body) -> walk body

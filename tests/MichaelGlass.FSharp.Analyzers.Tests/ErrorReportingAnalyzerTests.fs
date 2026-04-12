@@ -43,6 +43,19 @@ let ``does not flag try/with that calls error reporting function`` () =
     test <@ messages.Length = 0 @>
 
 [<Fact>]
+let ``multi-clause try/with emits exactly one diagnostic`` () =
+    let source =
+        System.IO.File.ReadAllText(
+            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "error-reporting", "MultiClauseMissingReport.fs")
+        )
+
+    let context = getContextForSource source
+    let messages = analyze requiredFunctions context
+
+    test <@ messages.Length = 1 @>
+    test <@ messages.[0].Code = "MGA-ERROR-REPORT-001" @>
+
+[<Fact>]
 let ``returns empty when no required functions configured`` () =
     let source =
         System.IO.File.ReadAllText(

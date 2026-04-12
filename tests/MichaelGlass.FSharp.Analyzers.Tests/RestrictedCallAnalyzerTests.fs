@@ -34,6 +34,20 @@ let ``flags banned function`` () =
     test <@ messages.[0].Severity = Severity.Warning @>
 
 [<Fact>]
+let ``flags banned function via pipe`` () =
+    let source =
+        System.IO.File.ReadAllText(
+            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "restricted-call", "BannedFunctionPiped.fs")
+        )
+
+    let context = getContextForSource source
+    let messages = analyze configWithAll context
+
+    test <@ messages.Length = 1 @>
+    test <@ messages.[0].Code = "MGA-UNSAFE-CALL-001" @>
+    test <@ messages.[0].Severity = Severity.Warning @>
+
+[<Fact>]
 let ``flags banned call pattern`` () =
     let source =
         System.IO.File.ReadAllText(

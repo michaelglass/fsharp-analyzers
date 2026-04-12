@@ -138,9 +138,14 @@ let rec private walkExpr (usages: ResizeArray<IgnoreUsage>) (expr: SynExpr) =
     | SynExpr.ComputationExpr(expr = expr) -> walkExpr usages expr
     | SynExpr.Lambda(body = body) -> walkExpr usages body
     | SynExpr.Assert(expr = expr) -> walkExpr usages expr
-    | SynExpr.Match(clauses = clauses)
-    | SynExpr.MatchLambda(matchClauses = clauses)
-    | SynExpr.MatchBang(clauses = clauses) ->
+    | SynExpr.Match(expr = scrutinee; clauses = clauses)
+    | SynExpr.MatchBang(expr = scrutinee; clauses = clauses) ->
+        walkExpr usages scrutinee
+
+        for clause in clauses do
+            match clause with
+            | SynMatchClause(resultExpr = body) -> walkExpr usages body
+    | SynExpr.MatchLambda(matchClauses = clauses) ->
         for clause in clauses do
             match clause with
             | SynMatchClause(resultExpr = body) -> walkExpr usages body
