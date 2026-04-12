@@ -1,0 +1,36 @@
+[tasks.build]
+description = "Build the solution"
+run = "dotnet build MichaelGlass.FSharp.Analyzers.slnx"
+
+[tasks.test]
+description = "Run tests"
+run = "dotnet test MichaelGlass.FSharp.Analyzers.slnx"
+
+[tasks.check]
+description = "Run all checks with auto-fix"
+depends = ["format", "lint", "build", "test"]
+
+[tasks.ci]
+description = "Run all CI checks (no auto-fix)"
+run = [
+  "dotnet tool restore",
+  "dotnet fantomas --check src/ tests/",
+  "dotnet build MichaelGlass.FSharp.Analyzers.slnx",
+  "dotnet test MichaelGlass.FSharp.Analyzers.slnx",
+]
+
+[tasks.format]
+description = "Format with Fantomas"
+run = "dotnet fantomas src/ tests/"
+
+[tasks.lint]
+description = "Run FSharpLint"
+run = "dotnet fsharplint lint MichaelGlass.FSharp.Analyzers.slnx"
+
+[tasks.docs]
+description = "Generate API documentation"
+run = "dotnet fsdocs build --parameters root /MichaelGlass.FSharp.Analyzers/"
+
+[tasks.pack]
+description = "Create NuGet packages"
+run = "dotnet pack src/MichaelGlass.FSharp.Analyzers/MichaelGlass.FSharp.Analyzers.fsproj -c Release -o artifacts/"

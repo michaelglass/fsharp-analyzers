@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningLevel>5</WarningLevel>
+    <WarnOn>3390;1104;0020;0044;0025;3391;0067;0021;1182</WarnOn>
+    <NoWarn>$(NoWarn);NU1605;MSB3277;NETSDK1188</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>MichaelGlass.FSharp.Analyzers</PackageId>
+    <Version>0.1.0-alpha.1</Version>
+    <Authors>Michael Glass</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <Target Name="_AddAnalyzersToOutput">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(OutputPath)\$(AssemblyName).dll" PackagePath="analyzers/dotnet/fs" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <Compile Include="EditorConfig.fs" />
+    <Compile Include="Suppression.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FSharp.Analyzers.SDK" Version="0.36.0" />
+    <PackageReference Include="editorconfig" Version="0.15.0" />
+    <PackageReference Update="FSharp.Core" Version="10.0.101" />
+  </ItemGroup>
+
+</Project>

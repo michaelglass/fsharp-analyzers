@@ -1,0 +1,9 @@
+{
+  "packages": [
+    {
+      "name": "MichaelGlass.FSharp.Analyzers",
+      "fsproj": "src/MichaelGlass.FSharp.Analyzers/MichaelGlass.FSharp.Analyzers.fsproj",
+      "tagPrefix": "v"
+    }
+  ]
+}

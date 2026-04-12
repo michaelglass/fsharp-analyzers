@@ -1,0 +1,19 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    uses: michaelglass/MichaelsWackyFsPackageTools/.github/workflows/michaels-wacky-release.yml@main
+    with:
+      package-name: MichaelGlass.FSharp.Analyzers
+      tag-prefix: v
+      fsproj-path: src/MichaelGlass.FSharp.Analyzers/MichaelGlass.FSharp.Analyzers.fsproj
+    permissions:
+      contents: write
+      id-token: write
