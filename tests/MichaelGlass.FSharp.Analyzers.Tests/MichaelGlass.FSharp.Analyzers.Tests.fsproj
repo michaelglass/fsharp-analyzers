@@ -12,6 +12,7 @@
     <Compile Include="SuppressionTests.fs" />
     <Compile Include="EditorConfigTests.fs" />
     <Compile Include="WildcardAnalyzerTests.fs" />
+    <Compile Include="TaskIgnoreAnalyzerTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

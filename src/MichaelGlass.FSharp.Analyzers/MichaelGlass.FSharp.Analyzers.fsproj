@@ -36,6 +36,7 @@
     <Compile Include="EditorConfig.fs" />
     <Compile Include="Suppression.fs" />
     <Compile Include="WildcardAnalyzer.fs" />
+    <Compile Include="TaskIgnoreAnalyzer.fs" />
   </ItemGroup>
 
   <ItemGroup>
