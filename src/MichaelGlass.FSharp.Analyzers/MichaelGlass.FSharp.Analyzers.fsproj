@@ -38,6 +38,7 @@
     <Compile Include="WildcardAnalyzer.fs" />
     <Compile Include="TaskIgnoreAnalyzer.fs" />
     <Compile Include="RawSqlAnalyzer.fs" />
+    <Compile Include="ErrorReportingAnalyzer.fs" />
   </ItemGroup>
 
   <ItemGroup>

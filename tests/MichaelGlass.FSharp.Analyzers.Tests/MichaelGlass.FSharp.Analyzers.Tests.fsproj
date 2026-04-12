@@ -14,6 +14,7 @@
     <Compile Include="WildcardAnalyzerTests.fs" />
     <Compile Include="TaskIgnoreAnalyzerTests.fs" />
     <Compile Include="RawSqlAnalyzerTests.fs" />
+    <Compile Include="ErrorReportingAnalyzerTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
