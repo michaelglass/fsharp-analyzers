@@ -15,6 +15,7 @@
     <Compile Include="TaskIgnoreAnalyzerTests.fs" />
     <Compile Include="RawSqlAnalyzerTests.fs" />
     <Compile Include="ErrorReportingAnalyzerTests.fs" />
+    <Compile Include="RestrictedCallAnalyzerTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

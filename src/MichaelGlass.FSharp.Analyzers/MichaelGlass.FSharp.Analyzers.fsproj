@@ -39,6 +39,7 @@
     <Compile Include="TaskIgnoreAnalyzer.fs" />
     <Compile Include="RawSqlAnalyzer.fs" />
     <Compile Include="ErrorReportingAnalyzer.fs" />
+    <Compile Include="RestrictedCallAnalyzer.fs" />
   </ItemGroup>
 
   <ItemGroup>
