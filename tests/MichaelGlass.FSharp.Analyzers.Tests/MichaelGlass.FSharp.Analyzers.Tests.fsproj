@@ -11,6 +11,7 @@
     <Compile Include="Common.fs" />
     <Compile Include="SuppressionTests.fs" />
     <Compile Include="EditorConfigTests.fs" />
+    <Compile Include="WildcardAnalyzerTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
