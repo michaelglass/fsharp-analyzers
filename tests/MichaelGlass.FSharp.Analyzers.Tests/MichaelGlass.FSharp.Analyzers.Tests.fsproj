@@ -13,6 +13,7 @@
     <Compile Include="EditorConfigTests.fs" />
     <Compile Include="WildcardAnalyzerTests.fs" />
     <Compile Include="TaskIgnoreAnalyzerTests.fs" />
+    <Compile Include="RawSqlAnalyzerTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

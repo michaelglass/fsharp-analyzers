@@ -1,0 +1,53 @@
+module MichaelGlass.FSharp.Analyzers.Tests.RawSqlAnalyzerTests
+
+open Xunit
+open Swensen.Unquote
+open FSharp.Analyzers.SDK
+open FSharp.Analyzers.SDK.Testing
+open MichaelGlass.FSharp.Analyzers.RawSqlAnalyzer
+
+let private projectOptions =
+    mkOptionsFromProject "net10.0" []
+    |> Async.AwaitTask
+    |> Async.RunSynchronously
+
+let private getContextForSource (source: string) =
+    getContext projectOptions source
+
+[<Fact>]
+let ``flags raw SQL string`` () =
+    let source =
+        System.IO.File.ReadAllText(
+            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "rawsql", "RawSqlString.fs")
+        )
+
+    let context = getContextForSource source
+    let messages = rawSqlAnalyzer context |> Async.RunSynchronously
+
+    test <@ messages.Length = 1 @>
+    test <@ messages.[0].Code = "MGA-RAWSQL-001" @>
+    test <@ messages.[0].Severity = Severity.Warning @>
+
+[<Fact>]
+let ``does not flag non-SQL string`` () =
+    let source =
+        System.IO.File.ReadAllText(
+            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "rawsql", "NonSqlString.fs")
+        )
+
+    let context = getContextForSource source
+    let messages = rawSqlAnalyzer context |> Async.RunSynchronously
+
+    test <@ messages.Length = 0 @>
+
+[<Fact>]
+let ``does not flag suppressed SQL string`` () =
+    let source =
+        System.IO.File.ReadAllText(
+            System.IO.Path.Combine(__SOURCE_DIRECTORY__, "data", "rawsql", "RawSqlSuppressed.fs")
+        )
+
+    let context = getContextForSource source
+    let messages = rawSqlAnalyzer context |> Async.RunSynchronously
+
+    test <@ messages.Length = 0 @>
