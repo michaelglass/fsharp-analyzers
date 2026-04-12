@@ -1,10 +1,13 @@
+[tools]
+dotnet = "10.0"
+
 [tasks.build]
 description = "Build the solution"
 run = "dotnet build MichaelGlass.FSharp.Analyzers.slnx"
 
 [tasks.test]
 description = "Run tests"
-run = "dotnet test MichaelGlass.FSharp.Analyzers.slnx"
+run = "dotnet test --solution MichaelGlass.FSharp.Analyzers.slnx"
 
 [tasks.check]
 description = "Run all checks with auto-fix"
@@ -16,7 +19,7 @@ run = [
   "dotnet tool restore",
   "dotnet fantomas --check src/ tests/",
   "dotnet build MichaelGlass.FSharp.Analyzers.slnx",
-  "dotnet test MichaelGlass.FSharp.Analyzers.slnx",
+  "dotnet test --solution MichaelGlass.FSharp.Analyzers.slnx",
 ]
 
 [tasks.format]
