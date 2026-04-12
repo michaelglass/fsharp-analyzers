@@ -3,16 +3,8 @@ module MichaelGlass.FSharp.Analyzers.Tests.RestrictedCallAnalyzerTests
 open Xunit
 open Swensen.Unquote
 open FSharp.Analyzers.SDK
-open FSharp.Analyzers.SDK.Testing
+open MichaelGlass.FSharp.Analyzers.Tests.Common
 open MichaelGlass.FSharp.Analyzers.RestrictedCallAnalyzer
-
-let private projectOptions =
-    mkOptionsFromProject "net10.0" []
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
-
-let private getContextForSource (source: string) =
-    getContext projectOptions source
 
 let private configWithAll =
     { BannedFunctions = Set.ofList [ "Task.WhenAll"; "Thread.Sleep" ]

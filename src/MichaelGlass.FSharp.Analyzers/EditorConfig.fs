@@ -1,14 +1,19 @@
 module MichaelGlass.FSharp.Analyzers.EditorConfig
 
 open System
+open System.Collections.Concurrent
 open EditorConfig.Core
 
 let private parser = EditorConfigParser()
 
-/// Get a single property value from .editorconfig for the given file path.
+let private cache = ConcurrentDictionary<string, FileConfiguration>()
+
+let private getParsed (fileName: string) =
+    cache.GetOrAdd(fileName, fun f -> parser.Parse(f))
+
 let getProperty (fileName: string) (key: string) : string option =
     try
-        let configs = parser.Parse(fileName)
+        let configs = getParsed fileName
         configs.Properties
         |> Seq.tryFind (fun kvp -> kvp.Key.Equals(key, StringComparison.OrdinalIgnoreCase))
         |> Option.map (fun kvp -> kvp.Value.Trim())
