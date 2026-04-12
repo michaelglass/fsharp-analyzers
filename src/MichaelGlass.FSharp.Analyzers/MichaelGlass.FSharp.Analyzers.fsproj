@@ -37,6 +37,7 @@
   <ItemGroup>
     <Compile Include="EditorConfig.fs" />
     <Compile Include="Suppression.fs" />
+    <Compile Include="AstWalk.fs" />
     <Compile Include="WildcardAnalyzer.fs" />
     <Compile Include="TaskIgnoreAnalyzer.fs" />
     <Compile Include="RawSqlAnalyzer.fs" />

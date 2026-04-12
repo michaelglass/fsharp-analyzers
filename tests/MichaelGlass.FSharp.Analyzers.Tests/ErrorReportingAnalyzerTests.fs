@@ -3,16 +3,8 @@ module MichaelGlass.FSharp.Analyzers.Tests.ErrorReportingAnalyzerTests
 open Xunit
 open Swensen.Unquote
 open FSharp.Analyzers.SDK
-open FSharp.Analyzers.SDK.Testing
+open MichaelGlass.FSharp.Analyzers.Tests.Common
 open MichaelGlass.FSharp.Analyzers.ErrorReportingAnalyzer
-
-let private projectOptions =
-    mkOptionsFromProject "net10.0" []
-    |> Async.AwaitTask
-    |> Async.RunSynchronously
-
-let private getContextForSource (source: string) =
-    getContext projectOptions source
 
 let private requiredFunctions = Set.ofList [ "logError"; "captureError" ]
 
