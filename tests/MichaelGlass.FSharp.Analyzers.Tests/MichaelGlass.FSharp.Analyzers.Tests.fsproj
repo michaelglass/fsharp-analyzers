@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="Common.fs" />
     <Compile Include="SuppressionTests.fs" />
+    <Compile Include="EditorConfigTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

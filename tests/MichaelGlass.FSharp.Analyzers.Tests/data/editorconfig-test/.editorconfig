@@ -1,0 +1,5 @@
+root = true
+
+[*.fs]
+my_list_key = alpha, bravo, charlie
+my_single_key = hello
