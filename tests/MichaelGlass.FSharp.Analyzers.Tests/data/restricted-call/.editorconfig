@@ -1,0 +1,6 @@
+root = true
+
+[*.fs]
+mga_banned_functions = Task.WhenAll, Thread.Sleep
+mga_banned_call_patterns = Attr.type':submit
+mga_unsafe_dynamic_arg_functions = Text.raw
