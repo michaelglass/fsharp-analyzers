@@ -146,9 +146,15 @@ let private findProblematicWildcards (ctx: WalkContext) (clauses: SynMatchClause
 /// Recursively walk an expression and collect wildcard ranges
 let rec private walkExpr (ctx: WalkContext) (expr: SynExpr) =
     match expr with
-    | SynExpr.Match(clauses = clauses)
-    | SynExpr.MatchLambda(matchClauses = clauses)
-    | SynExpr.MatchBang(clauses = clauses) ->
+    | SynExpr.Match(expr = scrutinee; clauses = clauses)
+    | SynExpr.MatchBang(expr = scrutinee; clauses = clauses) ->
+        let problematic = findProblematicWildcards ctx clauses
+        ctx.Ranges.AddRange(problematic)
+        walkExpr ctx scrutinee
+
+        for clause in clauses do
+            walkExpr ctx (getClauseBody clause)
+    | SynExpr.MatchLambda(matchClauses = clauses) ->
         let problematic = findProblematicWildcards ctx clauses
         ctx.Ranges.AddRange(problematic)
 

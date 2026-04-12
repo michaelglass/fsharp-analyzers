@@ -105,9 +105,14 @@ let rec private walkExpr (ranges: ResizeArray<range>) (expr: SynExpr) =
     | SynExpr.ComputationExpr(expr = expr) -> walkExpr ranges expr
     | SynExpr.Lambda(body = body) -> walkExpr ranges body
     | SynExpr.Assert(expr = expr) -> walkExpr ranges expr
-    | SynExpr.Match(clauses = clauses)
-    | SynExpr.MatchLambda(matchClauses = clauses)
-    | SynExpr.MatchBang(clauses = clauses) ->
+    | SynExpr.Match(expr = scrutinee; clauses = clauses)
+    | SynExpr.MatchBang(expr = scrutinee; clauses = clauses) ->
+        walkExpr ranges scrutinee
+
+        for clause in clauses do
+            match clause with
+            | SynMatchClause(resultExpr = body) -> walkExpr ranges body
+    | SynExpr.MatchLambda(matchClauses = clauses) ->
         for clause in clauses do
             match clause with
             | SynMatchClause(resultExpr = body) -> walkExpr ranges body

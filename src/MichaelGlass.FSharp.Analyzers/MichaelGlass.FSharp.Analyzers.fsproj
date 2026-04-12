@@ -16,6 +16,7 @@
     <NoPackageAnalysis>true</NoPackageAnalysis>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddAnalyzersToOutput</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -28,7 +29,8 @@
 
   <Target Name="_AddAnalyzersToOutput">
     <ItemGroup>
-      <TfmSpecificPackageFile Include="$(OutputPath)\$(AssemblyName).dll" PackagePath="analyzers/dotnet/fs" />
+      <TfmSpecificPackageFile Include="$(OutputPath)/$(AssemblyName).dll" PackagePath="analyzers/dotnet/fs" />
+      <TfmSpecificPackageFile Include="$(OutputPath)/EditorConfig.Core.dll" PackagePath="analyzers/dotnet/fs" />
     </ItemGroup>
   </Target>
 
