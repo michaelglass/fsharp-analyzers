@@ -1,68 +1,44 @@
 {
   "overrides": {
-    "AstWalk.fs": [
-      {
-        "line": 24,
-        "branch": 33,
-        "reason": "loosened automatically",
-        "platform": "macos"
-      }
-    ],
-    "EditorConfig.fs": [
-      {
-        "line": 85,
-        "branch": 100,
-        "reason": "loosened automatically",
-        "platform": "macos"
-      }
-    ],
-    "ErrorReportingAnalyzer.fs": [
-      {
-        "line": 48,
-        "branch": 18,
-        "reason": "loosened automatically",
-        "platform": "macos"
-      }
-    ],
-    "RawSqlAnalyzer.fs": [
-      {
-        "line": 81,
-        "branch": 25,
-        "reason": "loosened automatically",
-        "platform": "macos"
-      }
-    ],
-    "RestrictedCallAnalyzer.fs": [
-      {
-        "line": 81,
-        "branch": 75,
-        "reason": "loosened automatically",
-        "platform": "macos"
-      }
-    ],
-    "Suppression.fs": [
-      {
-        "line": 77,
-        "branch": 100,
-        "reason": "loosened automatically",
-        "platform": "macos"
-      }
-    ],
-    "TaskIgnoreAnalyzer.fs": [
-      {
-        "line": 75,
-        "branch": 64,
-        "reason": "loosened automatically",
-        "platform": "macos"
-      }
-    ],
-    "WildcardAnalyzer.fs": [
-      {
-        "line": 84,
-        "branch": 60,
-        "reason": "loosened automatically",
-        "platform": "macos"
-      }
-    ]
+    "AstWalk.fs": {
+      "line": 24,
+      "branch": 33,
+      "reason": "loosened automatically"
+    },
+    "EditorConfig.fs": {
+      "line": 85,
+      "branch": 100,
+      "reason": "loosened automatically"
+    },
+    "ErrorReportingAnalyzer.fs": {
+      "line": 48,
+      "branch": 18,
+      "reason": "loosened automatically"
+    },
+    "RawSqlAnalyzer.fs": {
+      "line": 81,
+      "branch": 25,
+      "reason": "loosened automatically"
+    },
+    "RestrictedCallAnalyzer.fs": {
+      "line": 81,
+      "branch": 75,
+      "reason": "loosened automatically"
+    },
+    "Suppression.fs": {
+      "line": 77,
+      "branch": 100,
+      "reason": "loosened automatically"
+    },
+    "TaskIgnoreAnalyzer.fs": {
+      "line": 75,
+      "branch": 64,
+      "reason": "loosened automatically"
+    },
+    "WildcardAnalyzer.fs": {
+      "line": 84,
+      "branch": 60,
+      "reason": "loosened automatically"
+    }
   }
 }
