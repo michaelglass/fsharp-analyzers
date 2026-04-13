@@ -28,13 +28,12 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/michaelglass/fsharp-analyzers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <Target Name="_AddAnalyzersToOutput">
     <ItemGroup>
       <TfmSpecificPackageFile Include="$(OutputPath)/$(AssemblyName).dll" PackagePath="analyzers/dotnet/fs" />
+      <TfmSpecificPackageFile Include="$(OutputPath)/$(AssemblyName).pdb" PackagePath="analyzers/dotnet/fs" />
       <TfmSpecificPackageFile Include="$(OutputPath)/EditorConfig.Core.dll" PackagePath="analyzers/dotnet/fs" />
     </ItemGroup>
   </Target>
