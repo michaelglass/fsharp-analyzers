@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mise tasks:*)"
+      "Bash(mise tasks:*)",
+      "Bash(gh run:*)"
     ]
   }
 }
