@@ -46,6 +46,30 @@ done
 """
 depends = ["test"]
 
+[tasks.coverage-loosen]
+description = "Loosen coverage thresholds to current values"
+run = """
+for config in coverage-ratchet-*.json; do
+  [ -f "$config" ] || continue
+  project="${config#coverage-ratchet-}"; project="${project%.json}"
+  echo "Loosening $project..."
+  (cd "coverage/$project" && dotnet tool run coverageratchet loosen "../../$config")
+done
+"""
+depends = ["test"]
+
+[tasks.loosen-from-ci]
+description = "Merge coverage thresholds from CI artifacts"
+run = """
+for config in coverage-ratchet-*.json; do
+  [ -f "$config" ] || continue
+  project="${config#coverage-ratchet-}"; project="${project%.json}"
+  echo "Loosening from CI $project..."
+  (cd "coverage/$project" && dotnet tool run coverageratchet loosen-from-ci "../../$config")
+done
+"""
+depends = ["test"]
+
 [tasks.format]
 description = "Format with Fantomas"
 run = "dotnet fantomas src/ tests/"
