@@ -14,6 +14,7 @@ jobs:
       package-name: MichaelGlass.FSharp.Analyzers
       tag-prefix: v
       fsproj-path: src/MichaelGlass.FSharp.Analyzers/MichaelGlass.FSharp.Analyzers.fsproj
+      no-build-pack: false
     permissions:
       contents: write
       id-token: write
