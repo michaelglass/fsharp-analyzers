@@ -64,13 +64,22 @@ depends = ["build", "tool-restore"]
 run = "dotnet tool run fsprojlint"
 depends = ["tool-restore"]
 
+[tasks.sync-docs]
+description = "Sync README to docs"
+run = "dotnet tool run syncdocs sync"
+depends = ["tool-restore"]
+
+[tasks.sync-docs-check]
+run = "dotnet tool run syncdocs check"
+depends = ["tool-restore"]
+
 [tasks.check]
 description = "Run all checks with auto-fix"
-depends = ["format", "lint", "lint-project", "build", "test", "coverage-check", "docs"]
+depends = ["format", "sync-docs", "lint", "lint-project", "build", "test", "coverage-check", "docs"]
 
 [tasks.ci]
 description = "Run all CI checks (no auto-fix)"
-depends = ["format-check", "lint", "lint-project", "build", "test", "coverage-check", "docs"]
+depends = ["format-check", "sync-docs-check", "lint", "lint-project", "build", "test", "coverage-check", "docs"]
 
 [tasks.docs]
 description = "Generate API documentation"
