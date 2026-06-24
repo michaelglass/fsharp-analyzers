@@ -74,7 +74,7 @@ let walkParseTree (visitExpr: SynExpr -> bool) (parseTree: ParsedInput) : unit =
                 for clause in clauses do
                     match clause with
                     | SynMatchClause(resultExpr = body) -> walkExpr body
-            | SynExpr.LetOrUse(bindings = bindings; body = body) ->
+            | SynExpr.LetOrUse { Bindings = bindings; Body = body } ->
                 for binding in bindings do
                     walkBinding binding
 

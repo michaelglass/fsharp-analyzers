@@ -36,7 +36,7 @@ let rec private containsRequiredCall (requiredFunctions: Set<string>) (expr: Syn
     | SynExpr.Paren(expr = inner) -> recurse inner
     | SynExpr.Typed(expr = inner) -> recurse inner
     | SynExpr.Sequential(expr1 = e1; expr2 = e2) -> recurse e1 || recurse e2
-    | SynExpr.LetOrUse(bindings = bindings; body = body) ->
+    | SynExpr.LetOrUse { Bindings = bindings; Body = body } ->
         bindings |> List.exists (fun (SynBinding(expr = e)) -> recurse e)
         || recurse body
     | SynExpr.IfThenElse(ifExpr = cond; thenExpr = thenExpr; elseExpr = elseExprOpt) ->
