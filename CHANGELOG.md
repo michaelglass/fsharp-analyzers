@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-alpha.2 - 2026-06-24
+
 - Bump MichaelsWackyFsPackageTools tools to latest alpha
 - Bump FsSemanticTagger to 0.12.0-alpha.3
 - Bump dotnet tools (coverageratchet 0.13.0-alpha.1, pin unchanged tools to latest published alpha.2)
