@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- fix: **MGA-RAWSQL-001** no longer flags English prose that merely starts with a SQL keyword (e.g. `"Create account"`, `"Delete Account"`) — keyword matching is now case-sensitive against upper-case (real raw SQL upper-cases keywords) and requires content beyond the bare keyword. This also recovers true positives the old heuristic missed (e.g. `SELECT 1`). **MGA-TASK-IGNORE-001** no longer mis-fires on a synchronous `… |> ignore` (e.g. `expr |> Async.RunSynchronously |> ignore`) — it now checks the return type of the result-producing function rather than any symbol within the ignored expression's range. Both were latent over-broad heuristics exposed by the 0.37.2 / FCS-43.12 recompile in alpha.2.
+
 ## 0.1.0-alpha.2 - 2026-06-24
 
 - Bump MichaelsWackyFsPackageTools tools to latest alpha
