@@ -71,30 +71,6 @@ let private getReturnType (fsharpType: FSharpType) : FSharpType option =
     with _ ->
         None
 
-/// <summary>
-/// Checks whether any function call within the given range returns a Task-like type.
-/// Searches typed symbol uses for function/method calls whose return type is Task/Async.
-/// </summary>
-let private isExprRangeTaskLike (context: CliContext) (exprRange: range) : bool =
-    try
-        context.GetAllSymbolUsesOfFile()
-        |> Seq.exists (fun symbolUse ->
-            let r = symbolUse.Range
-
-            r.StartLine >= exprRange.StartLine
-            && r.StartLine <= exprRange.EndLine
-            && (r.StartLine > exprRange.StartLine || r.StartColumn >= exprRange.StartColumn)
-            && (r.StartLine < exprRange.EndLine || r.EndColumn <= exprRange.EndColumn)
-            && (match symbolUse.Symbol with
-                | :? FSharpMemberOrFunctionOrValue as mfv when mfv.FullType.IsFunctionType ->
-                    match getReturnType mfv.FullType with
-                    | Some retType -> isTaskLikeType retType
-                    | None -> false
-                | :? FSharpMemberOrFunctionOrValue as mfv -> isTaskLikeType mfv.FullType
-                | _ -> false))
-    with _ ->
-        false
-
 let private isIgnoreIdent (expr: SynExpr) =
     match expr with
     | SynExpr.Ident id when id.idText = "ignore" -> true
@@ -117,10 +93,61 @@ let private isPipeRight (expr: SynExpr) =
             last.idText = "op_PipeRight"
     | _ -> false
 
-[<NoComparison>]
+/// <summary>
+/// Returns the range of the expression that <em>produces the result value</em> of
+/// <paramref name="expr"/> — i.e. the head of the outermost (last-applied) function.
+/// </summary>
+/// <remarks>
+/// The ignored value's type is decided by the last function in the pipeline, not by
+/// any sub-expression. For <c>a |&gt; Async.RunSynchronously</c> the result is produced
+/// by <c>RunSynchronously</c> (an unwrapped, synchronous value) — even though the inner
+/// <c>a</c> is an <c>Async</c>. Scanning every symbol in the range would wrongly treat
+/// the whole expression as Task-like because of that inner <c>a</c>.
+/// </remarks>
+let rec private resultHeadRange (expr: SynExpr) : range =
+    match expr with
+    | SynExpr.Paren(expr = inner) -> resultHeadRange inner
+    | SynExpr.Typed(expr = inner) -> resultHeadRange inner
+    // `arg |> func` desugars to `App(App(op_PipeRight, arg), func)`: the result is
+    // `func`'s return value, so the head is `func`.
+    | SynExpr.App(funcExpr = SynExpr.App(funcExpr = op); argExpr = pipedFunc) when isPipeRight op ->
+        resultHeadRange pipedFunc
+    // `func arg`: the result is `func`'s return value, so the head is `func`.
+    | SynExpr.App(funcExpr = funcExpr) -> resultHeadRange funcExpr
+    | _ -> expr.Range
+
+/// <summary>
+/// Checks whether the value produced by the ignored expression is a Task/Async.
+/// Looks up only the result-producing function (the last one applied), so an inner
+/// Task/Async that has already been awaited/run (e.g. via <c>Async.RunSynchronously</c>)
+/// does not cause a false positive.
+/// </summary>
+let private isIgnoredExprTaskLike (context: CliContext) (ignoredExpr: SynExpr) : bool =
+    try
+        let headRange = resultHeadRange ignoredExpr
+
+        context.GetAllSymbolUsesOfFile()
+        |> Seq.exists (fun symbolUse ->
+            let r = symbolUse.Range
+
+            r.StartLine = headRange.StartLine
+            && r.EndLine = headRange.EndLine
+            && r.StartColumn = headRange.StartColumn
+            && r.EndColumn = headRange.EndColumn
+            && (match symbolUse.Symbol with
+                | :? FSharpMemberOrFunctionOrValue as mfv when mfv.FullType.IsFunctionType ->
+                    match getReturnType mfv.FullType with
+                    | Some retType -> isTaskLikeType retType
+                    | None -> false
+                | :? FSharpMemberOrFunctionOrValue as mfv -> isTaskLikeType mfv.FullType
+                | _ -> false))
+    with _ ->
+        false
+
+[<NoComparison; NoEquality>]
 type private IgnoreUsage =
     { FullRange: range
-      IgnoredExprRange: range }
+      IgnoredExpr: SynExpr }
 
 /// <summary>
 /// CLI analyzer entry point. Walks AST for <c>ignore</c> calls and uses typed
@@ -142,7 +169,7 @@ let taskIgnoreAnalyzer: Analyzer<CliContext> =
                         ->
                         usages.Add(
                             { FullRange = expr.Range
-                              IgnoredExprRange = innerExpr.Range }
+                              IgnoredExpr = innerExpr }
                         )
 
                         false
@@ -150,7 +177,7 @@ let taskIgnoreAnalyzer: Analyzer<CliContext> =
                     | SynExpr.App(funcExpr = funcExpr; argExpr = argExpr) when isIgnoreIdent funcExpr ->
                         usages.Add(
                             { FullRange = expr.Range
-                              IgnoredExprRange = argExpr.Range }
+                              IgnoredExpr = argExpr }
                         )
 
                         false
@@ -161,7 +188,7 @@ let taskIgnoreAnalyzer: Analyzer<CliContext> =
                 usages
                 |> Seq.toList
                 |> List.filter (fun usage ->
-                    isExprRangeTaskLike context usage.IgnoredExprRange
+                    isIgnoredExprTaskLike context usage.IgnoredExpr
                     && not (Suppression.isLineSuppressed context.SourceText usage.FullRange "MGA-TASK-IGNORE-001"))
                 |> List.map (fun usage ->
                     { Type = "Task |> ignore"

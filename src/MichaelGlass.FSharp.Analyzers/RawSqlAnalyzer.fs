@@ -10,27 +10,46 @@
 /// </remarks>
 module MichaelGlass.FSharp.Analyzers.RawSqlAnalyzer
 
-open System
 open FSharp.Analyzers.SDK
 open FSharp.Compiler.Syntax
 open FSharp.Compiler.Text
 
+/// <summary>
+/// Leading statement keywords. Matched <em>case-sensitively against upper-case</em>:
+/// real raw SQL conventionally upper-cases its keywords (<c>SELECT 1</c>,
+/// <c>WITH ins AS (…)</c>), whereas English prose that happens to start with the same
+/// word is Title- or lower-cased (<c>"Create account"</c>, <c>"Update Topic"</c>).
+/// A case-insensitive match flagged that prose as raw SQL.
+/// </summary>
 let private sqlKeywords =
-    [| "SELECT "
-       "INSERT "
-       "UPDATE "
-       "DELETE "
-       "WITH "
-       "CREATE "
-       "ALTER "
-       "DROP "
-       "TRUNCATE " |]
+    [| "SELECT"
+       "INSERT"
+       "UPDATE"
+       "DELETE"
+       "WITH"
+       "CREATE"
+       "ALTER"
+       "DROP"
+       "TRUNCATE" |]
+
+let private boundaryChars = [| ' '; '\t'; '\r'; '\n'; '('; ')'; ','; ';' |]
 
 let private looksLikeSql (s: string) =
-    let trimmed = s.TrimStart()
+    // TrimStart only — trailing content (e.g. the space in a "SELECT " fragment being
+    // concatenated) is what distinguishes a statement from a bare keyword label.
+    let started = s.TrimStart([| ' '; '\t'; '\r'; '\n'; '('; '"'; '\''; '`' |])
 
-    sqlKeywords
-    |> Array.exists (fun kw -> trimmed.StartsWith(kw, StringComparison.OrdinalIgnoreCase))
+    let word =
+        match started.IndexOfAny(boundaryChars) with
+        | -1 -> started
+        | i -> started.Substring(0, i)
+
+    // Case-sensitive: only an upper-cased keyword counts (see sqlKeywords remark).
+    // The keyword must also begin a statement, not BE the whole string: a bare "DELETE"
+    // (an HTTP method / label) is not raw SQL, whereas a "DELETE FROM …" statement or a
+    // "SELECT " fragment being concatenated is.
+    (sqlKeywords |> Array.exists (fun kw -> word = kw))
+    && started.Length > word.Length
 
 let private isFileExcluded (fileName: string) =
     let excludedFiles =
