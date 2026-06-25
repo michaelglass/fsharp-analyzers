@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- fix: bundle EditorConfig.Core's transitive deps so `.editorconfig` MGA config (`mga_wildcard_allowed_types`, `mga_rawsql_excluded_files`, `mga_error_reporting_functions`, `mga_banned_*`) actually loads in an analyzer host instead of silently falling back to defaults. The package previously shipped only `EditorConfig.Core.dll`; inside an analyzer host (the fshw daemon) `EditorConfigParser()` then threw `FileNotFoundException` for the unbundled `TestableIO.System.IO.Abstractions.Wrappers`, which `getProperty` swallowed — so every MGA key fell back to its hardcoded default. The pack target now bundles the full runtime closure (everything the host does not already provide), and `getProperty` no longer masks a parser-construction failure.
+
 ## 0.1.0-alpha.3 - 2026-06-24
 
 - fix: **MGA-RAWSQL-001** no longer flags English prose that merely starts with a SQL keyword (e.g. `"Create account"`, `"Delete Account"`) — keyword matching is now case-sensitive against upper-case (real raw SQL upper-cases keywords) and requires content beyond the bare keyword. This also recovers true positives the old heuristic missed (e.g. `SELECT 1`). **MGA-TASK-IGNORE-001** no longer mis-fires on a synchronous `… |> ignore` (e.g. `expr |> Async.RunSynchronously |> ignore`) — it now checks the return type of the result-producing function rather than any symbol within the ignored expression's range. Both were latent over-broad heuristics exposed by the 0.37.2 / FCS-43.12 recompile in alpha.2.
