@@ -30,11 +30,44 @@
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
-  <Target Name="_AddAnalyzersToOutput">
+  <!--
+    Packages the analyzer HOST (FSharp.Analyzers.SDK / the fshw daemon) already loads.
+    These must NOT be bundled or they collide with the host's own copies. Everything
+    else among our runtime deps (i.e. the editorconfig transitive closure) MUST ship,
+    or EditorConfigParser() throws FileNotFoundException at construction inside the host
+    and every .editorconfig MGA key silently falls back to its hardcoded default.
+    Listing only the host-provided set (a stable contract) — rather than the volatile
+    editorconfig closure — means a future editorconfig bump auto-bundles new transitive
+    deps instead of silently dropping them.
+  -->
+  <ItemGroup>
+    <_AnalyzerHostProvidedPackage Include="FSharp.Analyzers.SDK" />
+    <_AnalyzerHostProvidedPackage Include="FSharp.Compiler.Service" />
+    <_AnalyzerHostProvidedPackage Include="FSharp.Core" />
+    <_AnalyzerHostProvidedPackage Include="McMaster.NETCore.Plugins" />
+    <_AnalyzerHostProvidedPackage Include="Microsoft.Extensions.Logging.Abstractions" />
+    <!-- Build-time only (SourceLink, PrivateAssets=All); never a runtime analyzer dep. -->
+    <_AnalyzerHostProvidedPackage Include="System.IO.Hashing" />
+  </ItemGroup>
+
+  <Target Name="_AddAnalyzersToOutput" DependsOnTargets="ResolveReferences">
+    <!-- Materialise the host list into a ';'-bracketed property: item-list refs (@(...))
+         do NOT expand inside property-function arguments, only in a plain assignment. -->
+    <PropertyGroup>
+      <_AnalyzerHostProvidedList>;@(_AnalyzerHostProvidedPackage);</_AnalyzerHostProvidedList>
+    </PropertyGroup>
     <ItemGroup>
       <TfmSpecificPackageFile Include="$(OutputPath)/$(AssemblyName).dll" PackagePath="analyzers/dotnet/fs" />
       <TfmSpecificPackageFile Include="$(OutputPath)/$(AssemblyName).pdb" PackagePath="analyzers/dotnet/fs" />
-      <TfmSpecificPackageFile Include="$(OutputPath)/EditorConfig.Core.dll" PackagePath="analyzers/dotnet/fs" />
+
+      <!-- Bundle every runtime dependency that the host does NOT already provide.
+           Substring match against ';'-bracketed sentinels so package ids that are
+           prefixes of one another can't false-match. -->
+      <_AnalyzerBundledDll
+        Include="@(RuntimeCopyLocalItems)"
+        Condition="'%(RuntimeCopyLocalItems.Extension)' == '.dll'
+                   and !$(_AnalyzerHostProvidedList.Contains(';%(RuntimeCopyLocalItems.NuGetPackageId);'))" />
+      <TfmSpecificPackageFile Include="@(_AnalyzerBundledDll)" PackagePath="analyzers/dotnet/fs" />
     </ItemGroup>
   </Target>
 
