@@ -31,7 +31,7 @@
   <ItemGroup>
     <PackageReference Include="xunit.v3" Version="3.2.2" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
-    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.8.0" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.9.0" />
     <PackageReference Include="Unquote" Version="7.0.1" />
     <PackageReference Include="FSharp.Analyzers.SDK.Testing" Version="0.37.2" />
   </ItemGroup>
