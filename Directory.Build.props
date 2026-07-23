@@ -1,0 +1,10 @@
+<Project>
+
+  <ItemGroup>
+    <!-- RefStamp: a LOCAL `dotnet pack` derives its version from the jj/git source
+         ref (AUTOMATION-123), so a dev machine cannot produce a release-shaped
+         version. PrivateAssets="all" keeps it out of the published package's deps. -->
+    <PackageReference Include="RefStamp" Version="0.1.0-alpha.2" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>
