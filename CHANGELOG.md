@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-alpha.5 - 2026-08-19
+
 - fix: a `// {CODE}:ok` marker now binds from anywhere in the contiguous comment block directly above the flagged construct, not only from the single adjacent line. Writing the marker first and the justification under it — the natural order — used to leave the marker two or more lines up, where nothing looked for it; the diagnostic then reappeared shifted down by the length of the justification, which reads like the analyzer moved to a new site rather than like the suppression missing. The block still ends at the first blank line or line of code, so a marker separated from its construct continues not to suppress, and every placement is pinned by a test in both directions.
 
 ## 0.1.0-alpha.4 - 2026-06-25
