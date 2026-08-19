@@ -53,13 +53,29 @@ mga_unsafe_dynamic_arg_functions = Text.raw, Html.rawText
 
 ## Suppression
 
-Add `// {CODE}:ok` on the flagged line or the line above:
+Add `// {CODE}:ok` on the flagged line, or anywhere in the comment block directly above it:
 
 ```fsharp
 match shape with
 | Circle r -> drawCircle r
 | _ -> drawDefault () // MGA-WILDCARD-001:ok — fallback is intentional here
 ```
+
+A justification too long for one line goes on its own lines. The marker binds from anywhere
+in that block, so it can lead the justification or trail it:
+
+```fsharp
+// MGA-ERROR-REPORT-001:ok — a part we cannot decode contributes no fields;
+// the caller's report is still recorded from whatever else parsed.
+try
+    decodePart raw
+with _ ->
+    []
+```
+
+The block ends at the first blank line or line of code. A marker separated from the
+construct that way does not suppress — which is what stops a marker left behind by an
+earlier edit from silencing whatever moved in underneath it.
 
 ## License
 
