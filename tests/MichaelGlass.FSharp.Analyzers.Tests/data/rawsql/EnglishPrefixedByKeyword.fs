@@ -1,7 +1,8 @@
 module TestData.SqlInDocComment
 
 // English UI strings that merely START with a SQL keyword (CREATE / DELETE /
-// UPDATE) must not be flagged as raw SQL. Repro: thellma/intelligence I18n.fs.
+// UPDATE) must not be flagged as raw SQL. Typical shape: a record of localized
+// UI copy.
 type Translations =
     { SignUpSubtitle: string
       CreateAccount: string
