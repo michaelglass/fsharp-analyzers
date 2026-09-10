@@ -43,7 +43,7 @@ let ``returns empty when no required functions configured`` () =
 
     test <@ messages.Length = 0 @>
 
-// --- Suppression placement, end to end (AUTOMATION-353) -----------------------
+// --- Suppression placement, end to end ----------------------------------------
 // These sources are inline rather than files under data/ because the whole point
 // is the exact line placement of the marker, and `mise run format` rewrites every
 // .fs file under tests/ — including the fixtures.
