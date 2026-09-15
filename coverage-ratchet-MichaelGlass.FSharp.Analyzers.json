@@ -1,8 +1,8 @@
 {
   "overrides": {
     "AstWalk.fs": {
-      "line": 24,
-      "branch": 33,
+      "line": 33,
+      "branch": 44,
       "reason": "loosened automatically"
     },
     "EditorConfig.fs": {
@@ -16,8 +16,8 @@
       "reason": "loosened automatically"
     },
     "RawSqlAnalyzer.fs": {
-      "line": 81,
-      "branch": 25,
+      "line": 83,
+      "branch": 35,
       "reason": "loosened automatically"
     },
     "RestrictedCallAnalyzer.fs": {
@@ -26,21 +26,21 @@
       "reason": "loosened automatically"
     },
     "Suppression.fs": {
-      "line": 77,
+      "line": 88,
       "branch": 100,
       "reason": "loosened automatically"
     },
     "TaskIgnoreAnalyzer.fs": [
       {
-        "line": 75,
-        "branch": 64,
+        "line": 76,
+        "branch": 68,
         "reason": "macOS-measured actual is 22/32 = 68.8% branch at 76.8% line; the pre-drift floor is retained here so the platform signal is not lost to the Linux re-key.",
         "platform": "macos"
       },
       {
         "line": 75,
         "branch": 39,
-        "reason": "Branch-instrumentation drift, not lost coverage. The Linux CI branch DENOMINATOR for this file jumped 32 -> 256 (~8x) while the numerator held: macOS measures 22/32 = 68.8% and Linux CI measures 102/256 = 39.8% from the SAME source, with line coverage byte-identical at 76.8% on both. Verified by re-running CI on the pre-fix commit a8f1209d, which failed with numbers identical to main (b9406ed5) - so the collapse predates the change in flight and is the known cross-platform branch non-determinism of ADR 0019. Re-keyed per platform rather than lowered across the board: a blanket 39 would silently discard the macOS signal, where 64 is still met with headroom. The Linux floor is the CI-measured actual (39.8% -> 39), not padded and not met by excluding anything; the line floor is untouched at 75 on both platforms because only the branch dimension drifted.",
+        "reason": "Branch-instrumentation drift, not lost coverage. The Linux CI branch DENOMINATOR for this file jumped 32 -\u003E 256 (~8x) while the numerator held: macOS measures 22/32 = 68.8% and Linux CI measures 102/256 = 39.8% from the SAME source, with line coverage byte-identical at 76.8% on both. Verified by re-running CI on the pre-fix commit a8f1209d, which failed with numbers identical to main (b9406ed5) - so the collapse predates the change in flight and is the known cross-platform branch non-determinism of ADR 0019. Re-keyed per platform rather than lowered across the board: a blanket 39 would silently discard the macOS signal, where 64 is still met with headroom. The Linux floor is the CI-measured actual (39.8% -\u003E 39), not padded and not met by excluding anything; the line floor is untouched at 75 on both platforms because only the branch dimension drifted.",
         "platform": "linux"
       }
     ],
