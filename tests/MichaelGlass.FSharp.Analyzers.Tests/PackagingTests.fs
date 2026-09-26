@@ -102,3 +102,59 @@ let ``package omits host-provided assemblies to avoid load conflicts`` () =
 
     let leaked = hostProvided |> List.filter (fun d -> Set.contains d dlls)
     test <@ List.isEmpty leaked @>
+
+/// <summary>Extracts the packed analyzers/dotnet/fs folder, the directory a host loads.</summary>
+let private extractAnalyzerPath () =
+    let nupkg = packAnalyzer ()
+
+    let dir =
+        Path.Combine(Path.GetTempPath(), "mga-analyzers-" + Guid.NewGuid().ToString("N"))
+
+    Directory.CreateDirectory(dir) |> ignore
+    use archive = ZipFile.OpenRead(nupkg)
+
+    for entry in archive.Entries do
+        if entry.FullName.StartsWith("analyzers/dotnet/fs/") && entry.Name <> "" then
+            entry.ExtractToFile(Path.Combine(dir, entry.Name))
+
+    dir
+
+[<Fact>]
+let ``the packed analyzers load and run under an SDK 0.39 host`` () =
+    // The SDK's loader skips, without an error, every analyzer built against a different
+    // SDK major.minor than the host's. So a host on 0.39 loading ZERO of these would look
+    // exactly like a clean file. Load the PACKAGE's folder the way a host does and prove
+    // the set is found, runs, and reports.
+    let hostSdk = typeof<FSharp.Analyzers.SDK.CliContext>.Assembly.GetName().Version
+
+    test <@ (hostSdk.Major, hostSdk.Minor) = (0, 39) @>
+
+    let dir = extractAnalyzerPath ()
+
+    let client =
+        FSharp.Analyzers.SDK.Client<FSharp.Analyzers.SDK.CliAnalyzerAttribute, FSharp.Analyzers.SDK.CliContext>()
+
+    let loaded = client.LoadAnalyzers dir
+    test <@ loaded.Analyzers = 5 @>
+
+    let context =
+        Common.getContextForSource (Common.readTestData [ "wildcard"; "WildcardOnDU.fs" ])
+
+    let results = client.RunAnalyzersSafely context |> Async.RunSynchronously
+
+    let failures =
+        results
+        |> List.choose (fun r ->
+            match r.Output with
+            | Result.Ok _ -> None
+            | Result.Error ex -> Some $"%s{r.AnalyzerName}: %s{ex.Message}")
+
+    let codes =
+        results
+        |> List.collect (fun r ->
+            match r.Output with
+            | Result.Ok messages -> messages |> List.map (fun m -> m.Code)
+            | Result.Error _ -> [])
+
+    test <@ List.isEmpty failures @>
+    test <@ List.contains "MGA-WILDCARD-001" codes @>
