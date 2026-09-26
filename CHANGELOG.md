@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-alpha.7 - 2026-09-26
+
 - Changed: built against FSharp.Analyzers.SDK 0.39 (was 0.37.2). The SDK's loader skips, without an error, any analyzer built against a different SDK major.minor than the host's, so this release loads only in a host on SDK 0.39 (and no longer in one on 0.37). A new packaging test loads the packed `analyzers/dotnet/fs` folder through the SDK's own host client and requires all five analyzers to load, run without raising, and report.
 
 ## 0.1.0-alpha.6 - 2026-09-20
