@@ -23,6 +23,15 @@ let ``flags banned function`` () =
     test <@ messages.[0].Code = "MGA-UNSAFE-CALL-001" @>
     test <@ messages.[0].Severity = Severity.Warning @>
 
+[<Theory>]
+[<InlineData("BannedFunctionInAnonRecord.fs")>]
+[<InlineData("BannedFunctionInObjectExpression.fs")>]
+let ``flags banned function inside an anonymous record or object-expression member`` (fixture: string) =
+    let source = readTestData [ "restricted-call"; fixture ]
+    let messages = analyze configWithAll (getContextForSource source)
+
+    test <@ messages |> List.map _.Code = [ "MGA-UNSAFE-CALL-001" ] @>
+
 [<Fact>]
 let ``flags banned function via pipe`` () =
     let source = readTestData [ "restricted-call"; "BannedFunctionPiped.fs" ]
@@ -87,12 +96,8 @@ let private runFromEditorConfig (properties: string) (fixture: string) =
     writeEditorConfig dir properties
     let source = readTestData [ "restricted-call"; fixture ]
 
-    let context =
-        { getContextForSource source with
-            FileName = System.IO.Path.Combine(dir, fixture)
-        }
-
-    restrictedCallAnalyzer context |> Async.RunSynchronously
+    restrictedCallAnalyzer (contextInConfiguredTree dir fixture source)
+    |> Async.RunSynchronously
 
 let private allThreeChecks =
     "mga_banned_functions = Task.WhenAll, Thread.Sleep\n"

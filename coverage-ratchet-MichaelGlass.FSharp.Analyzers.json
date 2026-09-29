@@ -1,13 +1,8 @@
 {
   "overrides": {
     "AstWalk.fs": {
-      "line": 45,
-      "branch": 53,
-      "reason": "loosened automatically"
-    },
-    "ErrorReportingAnalyzer.fs": {
-      "line": 91,
-      "branch": 87,
+      "line": 63,
+      "branch": 63,
       "reason": "loosened automatically"
     },
     "RawSqlAnalyzer.fs": {

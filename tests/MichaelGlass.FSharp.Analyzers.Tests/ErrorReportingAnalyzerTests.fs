@@ -130,13 +130,8 @@ let riskyOperation () =
 [<Fact>]
 let ``an editorconfig edit changes the finding without restarting the process`` () =
     let dir = newConfiguredTree ()
-    let file = Path.Combine(dir, "ConfigStaleness.fs")
-    File.WriteAllText(file, configStalenessSource)
-
-    let context =
-        { getContextForSource configStalenessSource with
-            FileName = file
-        }
+    File.WriteAllText(Path.Combine(dir, "ConfigStaleness.fs"), configStalenessSource)
+    let context = contextInConfiguredTree dir "ConfigStaleness.fs" configStalenessSource
 
     // logError is the configured reporter, so the handler is compliant.
     writeEditorConfig dir "mga_error_reporting_functions = logError"
@@ -159,14 +154,9 @@ let ``recognises a report call nested anywhere in the handler, and only in the h
     let context = getContextForSource source
     let messages = analyze requiredFunctions context
 
-    let markedWith (marker: string) =
-        source.Split('\n')
-        |> Array.indexed
-        |> Array.choose (fun (i, l) -> // the diagnostic sits on the `try` line, directly above the marked body
-            if l.TrimEnd().EndsWith(marker) then Some i else None)
-        |> Array.toList
+    // The diagnostic sits on the `try` line, directly above the marked body.
+    let tryLinesMarkedWith marker =
+        linesMarkedWith marker source |> List.map (fun line -> line - 1)
 
-    let flagged = messages |> List.map (fun m -> m.Range.StartLine) |> List.sort
-
-    test <@ (markedWith "// reports").Length = 21 @>
-    test <@ flagged = markedWith "// silent" @>
+    test <@ (tryLinesMarkedWith "// reports").Length = 25 @>
+    test <@ flaggedLines messages = tryLinesMarkedWith "// silent" @>

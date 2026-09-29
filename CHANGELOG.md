@@ -3,7 +3,9 @@
 ## Unreleased
 
 - fix: **MGA-ERROR-REPORT-001** no longer flags a handler that reports from inside a list or array expression (`[ ... ]`, `[| ... |]`) or an anonymous record (`{| ... |}`). The handler walk looked through tuples and nominal records but not these shapes, so a report call there was invisible and the try/with was flagged as silent.
-- chore(deps): bump bundled `editorconfig` (EditorConfig.Core) 0.16.2 → 0.18.0. 0.17 made its parsed-file cache private to each parser instead of process-wide; the analyzers build a parser per lookup, so they now pass one shared cache explicitly and keep re-using parsed `.editorconfig` files between lookups, as before.
+- fix: **MGA-ERROR-REPORT-001** recognises a report call anywhere in a handler that the other analyzers already walk, including `while` and `for` loops, object expressions and interpolated-string fills. The handler check used its own partial expression walker, so a report inside any shape it did not list was invisible and the try/with was flagged as silent; it now uses the shared walker.
+- fix: **MGA-RAWSQL-001**, **MGA-UNSAFE-CALL-001** and **MGA-TASK-IGNORE-001** now look inside anonymous records (`{| ... |}`) and the members of object expressions (`{ new IDisposable with member _.Dispose() = ... }`). The shared expression walker skipped both, so a raw SQL string, restricted call or ignored Task there was not reported. Code that was silently passing can now produce new warnings.
+- chore(deps): bump bundled `editorconfig` (EditorConfig.Core) 0.16.2 → 0.18.0. 0.17 made its parsed-file cache private to each parser instead of process-wide; the analyzers build a parser per lookup, so they now keep their own process-wide cache of parsed `.editorconfig` files, one entry per path, replaced when the file's size or last-write time changes. (EditorConfig.Core's shareable cache keys on path, size and time and never evicts, so in a long-lived host every config edit would have added an entry that is never freed.)
 
 ## 0.1.0-alpha.7 - 2026-09-26
 

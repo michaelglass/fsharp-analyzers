@@ -6,14 +6,9 @@ module MichaelGlass.FSharp.Analyzers.AstWalk
 
 open FSharp.Compiler.Syntax
 
-/// <summary>
-/// Walks every <see cref="T:FSharp.Compiler.Syntax.SynExpr"/> node in the parse tree.
-/// The visitor controls recursion: return true to descend into children,
-/// false to prune that subtree.
-/// </summary>
-/// <param name="visitExpr">Called on each expression. Return false to skip children.</param>
-/// <param name="parseTree">The parsed F# source file.</param>
-let walkParseTree (visitExpr: SynExpr -> bool) (parseTree: ParsedInput) : unit =
+/// The expression, binding and member walkers for one visitor; they recurse into each other
+/// because members and bindings nest inside expressions (object expressions, let) and back.
+let private walkers (visitExpr: SynExpr -> bool) =
     let rec walkExpr (expr: SynExpr) =
         let recurse = visitExpr expr
 
@@ -31,9 +26,7 @@ let walkParseTree (visitExpr: SynExpr -> bool) (parseTree: ParsedInput) : unit =
                 for e in exprs do
                     walkExpr e
             | SynExpr.Record(copyInfo = copyExprOpt; recordFields = fields) ->
-                match copyExprOpt with
-                | Some(e, _) -> walkExpr e
-                | None -> ()
+                copyExprOpt |> Option.iter (fst >> walkExpr)
 
                 for field in fields do
                     match field with
@@ -41,14 +34,27 @@ let walkParseTree (visitExpr: SynExpr -> bool) (parseTree: ParsedInput) : unit =
                         match exprOpt with
                         | Some e -> walkExpr e
                         | None -> ()
+            | SynExpr.AnonRecd(copyInfo = copyExprOpt; recordFields = fields) ->
+                copyExprOpt |> Option.iter (fst >> walkExpr)
+
+                for _, _, e in fields do
+                    walkExpr e
             | SynExpr.New(expr = expr) -> walkExpr expr
-            | SynExpr.ObjExpr(argOptions = argOpt; bindings = bindings) ->
-                match argOpt with
-                | Some(e, _) -> walkExpr e
-                | None -> ()
+            | SynExpr.ObjExpr(argOptions = argOpt; bindings = bindings; members = members; extraImpls = interfaces) ->
+                argOpt |> Option.iter (fst >> walkExpr)
 
                 for binding in bindings do
                     walkBinding binding
+
+                for mem in members do
+                    walkMemberDefn mem
+
+                for SynInterfaceImpl(bindings = bindings; members = members) in interfaces do
+                    for binding in bindings do
+                        walkBinding binding
+
+                    for mem in members do
+                        walkMemberDefn mem
             | SynExpr.While(whileExpr = cond; doExpr = body) ->
                 walkExpr cond
                 walkExpr body
@@ -155,6 +161,63 @@ let walkParseTree (visitExpr: SynExpr -> bool) (parseTree: ParsedInput) : unit =
         match binding with
         | SynBinding(expr = body) -> walkExpr body
 
+    and walkMemberDefn (mem: SynMemberDefn) =
+        match mem with
+        | SynMemberDefn.Member(memberDefn = binding) -> walkBinding binding
+        | SynMemberDefn.LetBindings(bindings = bindings) ->
+            for binding in bindings do
+                walkBinding binding
+        | SynMemberDefn.GetSetMember(memberDefnForGet = getBinding; memberDefnForSet = setBinding) ->
+            getBinding |> Option.iter walkBinding
+            setBinding |> Option.iter walkBinding
+        | SynMemberDefn.AutoProperty(synExpr = expr) -> walkExpr expr
+        | _ -> ()
+
+    walkExpr, walkBinding, walkMemberDefn
+
+/// <summary>
+/// Walks <paramref name="expr"/> and every <see cref="T:FSharp.Compiler.Syntax.SynExpr"/>
+/// nested inside it. The visitor controls recursion: return true to descend into children,
+/// false to prune that subtree.
+/// </summary>
+/// <param name="visitExpr">Called on each expression. Return false to skip children.</param>
+/// <param name="expr">The root of the subtree to walk.</param>
+let walkExpr (visitExpr: SynExpr -> bool) (expr: SynExpr) : unit =
+    let walk, _, _ = walkers visitExpr
+    walk expr
+
+/// <summary>
+/// True when <paramref name="predicate"/> holds for <paramref name="expr"/> or any
+/// expression nested inside it. Stops descending once a match is found.
+/// </summary>
+/// <param name="predicate">The test applied to each expression.</param>
+/// <param name="expr">The root of the subtree to search.</param>
+let existsExpr (predicate: SynExpr -> bool) (expr: SynExpr) : bool =
+    let found = ref false
+
+    walkExpr
+        (fun e ->
+            if found.Value then
+                false
+            elif predicate e then
+                found.Value <- true
+                false
+            else
+                true)
+        expr
+
+    found.Value
+
+/// <summary>
+/// Walks every <see cref="T:FSharp.Compiler.Syntax.SynExpr"/> node in the parse tree.
+/// The visitor controls recursion: return true to descend into children,
+/// false to prune that subtree.
+/// </summary>
+/// <param name="visitExpr">Called on each expression. Return false to skip children.</param>
+/// <param name="parseTree">The parsed F# source file.</param>
+let walkParseTree (visitExpr: SynExpr -> bool) (parseTree: ParsedInput) : unit =
+    let walkExpr, walkBinding, walkMemberDefn = walkers visitExpr
+
     let rec walkModuleDecl (decl: SynModuleDecl) =
         match decl with
         | SynModuleDecl.Let(bindings = bindings) ->
@@ -174,23 +237,6 @@ let walkParseTree (visitExpr: SynExpr -> bool) (parseTree: ParsedInput) : unit =
         | SynTypeDefn(members = members) ->
             for mem in members do
                 walkMemberDefn mem
-
-    and walkMemberDefn (mem: SynMemberDefn) =
-        match mem with
-        | SynMemberDefn.Member(memberDefn = binding) -> walkBinding binding
-        | SynMemberDefn.LetBindings(bindings = bindings) ->
-            for binding in bindings do
-                walkBinding binding
-        | SynMemberDefn.GetSetMember(memberDefnForGet = getBinding; memberDefnForSet = setBinding) ->
-            match getBinding with
-            | Some b -> walkBinding b
-            | None -> ()
-
-            match setBinding with
-            | Some b -> walkBinding b
-            | None -> ()
-        | SynMemberDefn.AutoProperty(synExpr = expr) -> walkExpr expr
-        | _ -> ()
 
     match parseTree with
     | ParsedInput.ImplFile(ParsedImplFileInput(contents = modules)) ->

@@ -179,6 +179,40 @@ let inReturn () =
                  0)
     }
 
+let inWhileLoop () =
+    let mutable again = true
+
+    try
+        risky () |> ignore // reports
+    with ex ->
+        while again do
+            logError ex
+            again <- false
+
+let inForToLoop () =
+    try
+        risky () |> ignore // reports
+    with ex ->
+        for _ = 1 to 1 do
+            logError ex
+
+let inObjectExpression () =
+    try
+        risky () |> ignore // reports
+    with ex ->
+        let reporter =
+            { new System.IDisposable with
+                member _.Dispose() = logError ex
+            }
+
+        reporter.Dispose()
+
+let inInterpolatedString () =
+    try
+        risky () |> ignore // reports
+    with ex ->
+        printfn $"{logError ex}"
+
 let silent () =
     try
         risky () |> ignore // silent

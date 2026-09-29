@@ -42,3 +42,30 @@ let writeEditorConfig (dir: string) (properties: string) =
 let writeNestedEditorConfig (dir: string) (properties: string) =
     let contents = $"[*.fs]\n%s{properties}\n"
     System.IO.File.WriteAllText(System.IO.Path.Combine(dir, ".editorconfig"), contents)
+
+/// <summary>
+/// The 1-based line numbers of <paramref name="source"/> whose text ends with
+/// <paramref name="marker"/>, ignoring trailing whitespace (so a CRLF checkout matches).
+/// </summary>
+let linesMarkedWith (marker: string) (source: string) : int list =
+    source.Split('\n')
+    |> Array.indexed
+    |> Array.choose (fun (i, line) ->
+        if line.TrimEnd().EndsWith(marker) then
+            Some(i + 1)
+        else
+            None)
+    |> Array.toList
+
+/// <summary>The sorted start lines of the analyzer's messages.</summary>
+let flaggedLines (messages: FSharp.Analyzers.SDK.Message list) : int list =
+    messages |> List.map _.Range.StartLine |> List.sort
+
+/// <summary>
+/// A context for <paramref name="source"/> analysed as <paramref name="fileName"/> inside
+/// <paramref name="dir"/>, so the entry point reads that tree's <c>.editorconfig</c>.
+/// </summary>
+let contextInConfiguredTree (dir: string) (fileName: string) (source: string) =
+    { getContextForSource source with
+        FileName = System.IO.Path.Combine(dir, fileName)
+    }

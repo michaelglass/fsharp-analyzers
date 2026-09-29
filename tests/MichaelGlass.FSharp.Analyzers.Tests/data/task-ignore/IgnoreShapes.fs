@@ -16,5 +16,6 @@ let boundTask () =
 
 let parenthesised () = (work ()) |> ignore // flag
 let annotated () = (work (): Async<int>) |> ignore // flag
+let inAnonRecord () = {| Discarded = work () |> ignore |} // flag
 let genericValue (x: 'a) = x |> ignore // keep
 let directCallOnValue () = ignore (List.length [ 1 ]) // keep

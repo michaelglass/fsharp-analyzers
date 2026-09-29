@@ -116,13 +116,7 @@ let ``a config file appearing and disappearing mid-chain changes the answer`` ()
 
 [<Fact>]
 let ``a same-length rewrite with its timestamp restored is still served from the file cache`` () =
-    // Pins the one staleness window EditorConfig.fs documents, and with it that parsed
-    // config files are shared across lookups. EditorConfig.Core keys its file cache on
-    // path, size and last-write time; a rewrite that changes none of the three is only
-    // noticed by a lookup that re-reads the file, which is the cost this module declines
-    // to pay per lookup. If this goes red, lookups have started re-reading every config
-    // file (e.g. a library upgrade made the cache per-parser again) — revisit the cost
-    // trade-off in EditorConfig.fs rather than deleting the test.
+    // Pins the staleness window documented on EditorConfig.newParser.
     let dir = newConfiguredTree ()
     let file = Path.Combine(dir, "Sample.fs")
     File.WriteAllText(file, "module Sample\n")
@@ -135,3 +129,20 @@ let ``a same-length rewrite with its timestamp restored is still served from the
     writeEditorConfig dir "my_list_key = bravo"
     File.SetLastWriteTimeUtc(configPath, stamp)
     test <@ getListProperty file "my_list_key" = [ "alpha" ] @>
+
+[<Fact>]
+let ``the parsed-file cache keeps one entry per config file however often it is edited`` () =
+    // A daemon sees a config edited many times; each edit must replace, not add.
+    let dir = newConfiguredTree ()
+    let file = Path.Combine(dir, "Sample.fs")
+    File.WriteAllText(file, "module Sample\n")
+
+    for length in 1..5 do
+        let value = String.replicate length "a"
+        writeEditorConfig dir $"my_list_key = %s{value}"
+        test <@ getListProperty file "my_list_key" = [ value ] @>
+
+    let cachedInTree =
+        cachedConfigPaths () |> Seq.filter _.StartsWith(dir) |> Seq.toList
+
+    test <@ cachedInTree = [ Path.Combine(dir, ".editorconfig") ] @>
