@@ -5,18 +5,49 @@
 module MichaelGlass.FSharp.Analyzers.EditorConfig
 
 open System
+open System.Collections.Concurrent
 open System.IO.Abstractions
 open EditorConfig.Core
 
+let private fileSystem = FileSystem()
+
 /// <summary>
-/// Parsed <c>.editorconfig</c> files, shared by every lookup in the process.
+/// Parsed <c>.editorconfig</c> files, shared by every lookup in the process: one entry
+/// per config path, holding the parse together with the (last-write ticks, length) it
+/// was read at.
 /// </summary>
 /// <remarks>
-/// EditorConfig.Core gives each parser a private file cache unless one is passed in,
-/// and <see cref="newParser"/> builds a parser per lookup, so without this every
-/// lookup would re-read and re-parse each config file in its chain.
+/// <see cref="newParser"/> builds a parser per lookup, so without a shared cache every
+/// lookup would re-read and re-parse each config file in its chain. EditorConfig.Core's
+/// own <c>EditorConfigFileCache</c> keys entries on path, last-write time AND length and
+/// never evicts, so in a long-lived host every edit of a config file would add an entry
+/// that is never released. Keying on the path alone and replacing the entry when the
+/// stamp moves keeps this bounded by the number of distinct config files.
 /// </remarks>
-let private fileCache = EditorConfigFileCache()
+let private parsedFiles =
+    ConcurrentDictionary<string, struct (struct (int64 * int64) * EditorConfigFile)>(StringComparer.Ordinal)
+
+/// <summary>The config paths currently held in the parsed-file cache.</summary>
+let internal cachedConfigPaths () : string seq = parsedFiles.Keys
+
+/// <summary>
+/// Returns the parse of the config file at <paramref name="path"/>, re-reading it only
+/// when its last-write time or length changed since the cached parse.
+/// </summary>
+/// <remarks>
+/// The stamp is read BEFORE the content, so a write racing the read leaves an entry
+/// whose stamp is older than its content, and the next lookup re-reads it.
+/// </remarks>
+let private parsedConfigFile (path: string) : EditorConfigFile =
+    let info = fileSystem.FileInfo.New path
+    let stamp = struct (info.LastWriteTimeUtc.Ticks, info.Length)
+
+    match parsedFiles.TryGetValue path with
+    | true, struct (cachedStamp, parsed) when cachedStamp = stamp -> parsed
+    | _ ->
+        let parsed = EditorConfigFile.Parse(path, fileSystem)
+        parsedFiles[path] <- struct (stamp, parsed)
+        parsed
 
 /// <summary>
 /// Builds the parser for a single lookup.
@@ -37,9 +68,9 @@ let private fileCache = EditorConfigFileCache()
 /// about 0.07ms, which is the price of an answer that describes the config on disk now.
 /// </para>
 /// <para>
-/// The parsed config FILES, unlike the resolved chain, are shared: every parser is
-/// handed <see cref="fileCache"/>, EditorConfig.Core's cache of parsed files keyed on
-/// path, size and last-write time. That leaves one staleness window: an
+/// The parsed config FILES, unlike the resolved chain, are shared: every parser reads
+/// them through <see cref="parsedConfigFile"/>, which re-parses a file only when its
+/// size or last-write time moved. That leaves one staleness window: an
 /// <c>.editorconfig</c> rewritten to a different content of exactly the same length
 /// with its timestamp preserved is still served from the cache. Ordinary edits and
 /// checkouts move the timestamp, so this is narrow; closing it means re-reading every
@@ -58,7 +89,60 @@ let private fileCache = EditorConfigFileCache()
 /// </para>
 /// </remarks>
 let private newParser () =
-    EditorConfigParser(FileSystem(), fileCache)
+    EditorConfigParser(Func<string, EditorConfigFile> parsedConfigFile, fileSystem = fileSystem)
+
+/// <summary>
+/// The .editorconfig properties that apply to the given file, resolved once. Look keys up
+/// with <see cref="tryFind"/> and <see cref="listValue"/>.
+/// </summary>
+/// <remarks>
+/// Resolving walks and matches the whole config chain, so a caller needing several keys
+/// should resolve once and read each key from the result.
+/// </remarks>
+type Properties = private Properties of Map<string, string>
+
+/// <summary>
+/// Resolves the .editorconfig properties that apply to the given file.
+/// </summary>
+/// <param name="fileName">Absolute path to the source file being analyzed.</param>
+/// <returns>The file's properties; empty when none apply.</returns>
+/// <remarks>
+/// A per-file failure (an unusable path, a malformed .editorconfig) degrades to no
+/// properties. A parser-construction failure — a missing transitive dependency or other
+/// assembly-load fault — is rethrown rather than masked, so a broken deployment fails
+/// loudly instead of silently using defaults.
+/// </remarks>
+let getProperties (fileName: string) : Properties =
+    // Construct first, OUTSIDE the property-lookup try/with: a construction failure
+    // (missing deps / assembly load) must surface, not be swallowed as "no key".
+    let parser = newParser ()
+
+    try
+        parser.Parse(fileName).Properties
+        |> Seq.map (fun kvp -> kvp.Key.ToLowerInvariant(), kvp.Value.Trim())
+        |> Map.ofSeq
+        |> Properties
+    with _ ->
+        Properties Map.empty
+
+/// <summary>A single property value.</summary>
+/// <param name="key">The editorconfig property key (case-insensitive).</param>
+/// <param name="properties">Properties from <see cref="getProperties"/>.</param>
+/// <returns>The trimmed property value, or None if the key is absent.</returns>
+let tryFind (key: string) (properties: Properties) : string option =
+    let (Properties byKey) = properties
+    Map.tryFind (key.ToLowerInvariant()) byKey
+
+/// <summary>A comma-separated list property.</summary>
+/// <param name="key">The editorconfig property key (case-insensitive).</param>
+/// <param name="properties">Properties from <see cref="getProperties"/>.</param>
+/// <returns>List of trimmed values, or empty list if the key is absent.</returns>
+let listValue (key: string) (properties: Properties) : string list =
+    match tryFind key properties with
+    | None -> []
+    | Some value ->
+        value.Split(',', StringSplitOptions.RemoveEmptyEntries ||| StringSplitOptions.TrimEntries)
+        |> Array.toList
 
 /// <summary>
 /// Gets a single property value from .editorconfig for the given file.
@@ -66,25 +150,8 @@ let private newParser () =
 /// <param name="fileName">Absolute path to the source file being analyzed.</param>
 /// <param name="key">The editorconfig property key (case-insensitive).</param>
 /// <returns>The trimmed property value, or None if the key is genuinely absent.</returns>
-/// <remarks>
-/// A genuinely missing key (or a per-file parse failure of a malformed .editorconfig)
-/// degrades to <c>None</c>. A parser-construction failure — a missing transitive
-/// dependency or other assembly-load fault — is rethrown rather than masked, so a
-/// broken deployment fails loudly instead of silently using defaults.
-/// </remarks>
-let getProperty (fileName: string) (key: string) : string option =
-    // Construct first, OUTSIDE the property-lookup try/with: a construction failure
-    // (missing deps / assembly load) must surface, not be swallowed as "no key".
-    let parser = newParser ()
-
-    try
-        let configs = parser.Parse(fileName)
-
-        configs.Properties
-        |> Seq.tryFind (fun kvp -> kvp.Key.Equals(key, StringComparison.OrdinalIgnoreCase))
-        |> Option.map (fun kvp -> kvp.Value.Trim())
-    with _ ->
-        None
+/// <remarks>Failure semantics as for <see cref="getProperties"/>.</remarks>
+let getProperty (fileName: string) (key: string) : string option = getProperties fileName |> tryFind key
 
 /// <summary>
 /// Gets a comma-separated list property from .editorconfig.
@@ -92,9 +159,4 @@ let getProperty (fileName: string) (key: string) : string option =
 /// <param name="fileName">Absolute path to the source file being analyzed.</param>
 /// <param name="key">The editorconfig property key (case-insensitive).</param>
 /// <returns>List of trimmed values, or empty list if the key is not present.</returns>
-let getListProperty (fileName: string) (key: string) : string list =
-    match getProperty fileName key with
-    | None -> []
-    | Some value ->
-        value.Split(',', StringSplitOptions.RemoveEmptyEntries ||| StringSplitOptions.TrimEntries)
-        |> Array.toList
+let getListProperty (fileName: string) (key: string) : string list = getProperties fileName |> listValue key

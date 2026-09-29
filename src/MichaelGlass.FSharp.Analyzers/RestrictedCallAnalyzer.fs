@@ -27,11 +27,12 @@ type Config =
     }
 
 let private loadConfig (fileName: string) : Config =
-    let banned =
-        EditorConfig.getListProperty fileName "mga_banned_functions" |> Set.ofList
+    let properties = EditorConfig.getProperties fileName
+
+    let banned = EditorConfig.listValue "mga_banned_functions" properties |> Set.ofList
 
     let patterns =
-        EditorConfig.getListProperty fileName "mga_banned_call_patterns"
+        EditorConfig.listValue "mga_banned_call_patterns" properties
         |> List.choose (fun s ->
             match s.IndexOf(':') with
             | -1 -> None
@@ -39,7 +40,7 @@ let private loadConfig (fileName: string) : Config =
         |> Map.ofList
 
     let unsafeDynamic =
-        EditorConfig.getListProperty fileName "mga_unsafe_dynamic_arg_functions"
+        EditorConfig.listValue "mga_unsafe_dynamic_arg_functions" properties
         |> Set.ofList
 
     {
