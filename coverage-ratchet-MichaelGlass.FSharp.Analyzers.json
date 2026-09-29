@@ -32,9 +32,9 @@
     },
     "TaskIgnoreAnalyzer.fs": [
       {
-        "line": 76,
-        "branch": 68,
-        "reason": "macOS-measured actual is 22/32 = 68.8% branch at 76.8% line; the pre-drift floor is retained here so the platform signal is not lost to the Linux re-key.",
+        "line": 76.78571428571429,
+        "branch": 39.84375,
+        "reason": "Measured on macOS (CodeCoverage 18.9.0, SDK 10.0.400): 86/112 lines, 102/256 branches; the same branch total Linux CI instruments.",
         "platform": "macos"
       },
       {
