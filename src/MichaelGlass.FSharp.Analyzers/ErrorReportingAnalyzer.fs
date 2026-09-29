@@ -61,6 +61,7 @@ let rec private containsRequiredCall (requiredFunctions: Set<string>) (expr: Syn
     | SynExpr.ForEach(bodyExpr = body) -> recurse body
     | SynExpr.Tuple(exprs = exprs) -> exprs |> List.exists recurse
     | SynExpr.ArrayOrList(exprs = exprs) -> exprs |> List.exists recurse
+    | SynExpr.ArrayOrListComputed(expr = inner) -> recurse inner
     | SynExpr.Record(copyInfo = copyExprOpt; recordFields = fields) ->
         (match copyExprOpt with
          | Some(e, _) -> recurse e
@@ -70,6 +71,11 @@ let rec private containsRequiredCall (requiredFunctions: Set<string>) (expr: Syn
                match exprOpt with
                | Some e -> recurse e
                | None -> false)
+    | SynExpr.AnonRecd(copyInfo = copyExprOpt; recordFields = fields) ->
+        (match copyExprOpt with
+         | Some(e, _) -> recurse e
+         | None -> false)
+        || fields |> List.exists (fun (_, _, e) -> recurse e)
     | _ -> false
 
 /// <summary>

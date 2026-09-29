@@ -151,3 +151,21 @@ let ``an editorconfig edit changes the finding without restarting the process`` 
 
     test <@ afterConfigChange.Length = 1 @>
     test <@ afterConfigChange.[0].Code = "MGA-ERROR-REPORT-001" @>
+
+[<Fact>]
+let ``recognises a report call nested anywhere in the handler, and only in the handler`` () =
+    let source = readTestData [ "error-reporting"; "HandlerShapes.fs" ]
+    let context = getContextForSource source
+    let messages = analyze requiredFunctions context
+
+    let markedWith (marker: string) =
+        source.Split('\n')
+        |> Array.indexed
+        |> Array.choose (fun (i, l) -> // the diagnostic sits on the `try` line, directly above the marked body
+            if l.TrimEnd().EndsWith(marker) then Some i else None)
+        |> Array.toList
+
+    let flagged = messages |> List.map (fun m -> m.Range.StartLine) |> List.sort
+
+    test <@ (markedWith "// reports").Length = 21 @>
+    test <@ flagged = markedWith "// silent" @>
