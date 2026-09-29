@@ -18,15 +18,17 @@ open FSharp.Compiler.Text
 
 let private defaultAllowedTypes =
     Set.ofList
-        [ "Microsoft.FSharp.Core.option`1"
-          "Microsoft.FSharp.Core.voption`1"
-          "Microsoft.FSharp.Core.FSharpResult`2"
-          "Microsoft.FSharp.Core.FSharpChoice`2"
-          "Microsoft.FSharp.Core.FSharpChoice`3"
-          "Microsoft.FSharp.Core.FSharpChoice`4"
-          "Microsoft.FSharp.Core.FSharpChoice`5"
-          "Microsoft.FSharp.Core.FSharpChoice`6"
-          "Microsoft.FSharp.Core.FSharpChoice`7" ]
+        [
+            "Microsoft.FSharp.Core.option`1"
+            "Microsoft.FSharp.Core.voption`1"
+            "Microsoft.FSharp.Core.FSharpResult`2"
+            "Microsoft.FSharp.Core.FSharpChoice`2"
+            "Microsoft.FSharp.Core.FSharpChoice`3"
+            "Microsoft.FSharp.Core.FSharpChoice`4"
+            "Microsoft.FSharp.Core.FSharpChoice`5"
+            "Microsoft.FSharp.Core.FSharpChoice`6"
+            "Microsoft.FSharp.Core.FSharpChoice`7"
+        ]
 
 let private getAllowedTypes (fileName: string) =
     let extra = EditorConfig.getListProperty fileName "mga_wildcard_allowed_types"
@@ -190,13 +192,15 @@ let wildcardAnalyzer: Analyzer<CliContext> =
                 |> List.filter (fun range ->
                     not (Suppression.isLineSuppressed context.SourceText range "MGA-WILDCARD-001"))
                 |> List.map (fun range ->
-                    { Type = "Wildcard on DU"
-                      Message =
-                        "Catch-all pattern '| _ ->' on discriminated union type hides exhaustiveness checking. List all cases explicitly, or add '// MGA-WILDCARD-001:ok' to suppress."
-                      Code = "MGA-WILDCARD-001"
-                      Severity = Severity.Warning
-                      Range = range
-                      Fixes = [] })
+                    {
+                        Type = "Wildcard on DU"
+                        Message =
+                            "Catch-all pattern '| _ ->' on discriminated union type hides exhaustiveness checking. List all cases explicitly, or add '// MGA-WILDCARD-001:ok' to suppress."
+                        Code = "MGA-WILDCARD-001"
+                        Severity = Severity.Warning
+                        Range = range
+                        Fixes = []
+                    })
 
             return messages
         }

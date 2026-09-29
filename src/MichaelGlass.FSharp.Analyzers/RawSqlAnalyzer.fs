@@ -22,15 +22,17 @@ open FSharp.Compiler.Text
 /// A case-insensitive match flagged that prose as raw SQL.
 /// </summary>
 let private sqlKeywords =
-    [| "SELECT"
-       "INSERT"
-       "UPDATE"
-       "DELETE"
-       "WITH"
-       "CREATE"
-       "ALTER"
-       "DROP"
-       "TRUNCATE" |]
+    [|
+        "SELECT"
+        "INSERT"
+        "UPDATE"
+        "DELETE"
+        "WITH"
+        "CREATE"
+        "ALTER"
+        "DROP"
+        "TRUNCATE"
+    |]
 
 let private boundaryChars = [| ' '; '\t'; '\r'; '\n'; '('; ')'; ','; ';' |]
 
@@ -101,13 +103,15 @@ let rawSqlAnalyzer: Analyzer<CliContext> =
                     |> List.filter (fun range ->
                         not (Suppression.isLineSuppressed context.SourceText range "MGA-RAWSQL-001"))
                     |> List.map (fun range ->
-                        { Type = "Raw SQL string"
-                          Message =
-                            "Raw SQL string detected — prefer type-safe query builders instead of raw SQL. Add '// MGA-RAWSQL-001:ok' with a reason to suppress."
-                          Code = "MGA-RAWSQL-001"
-                          Severity = Severity.Warning
-                          Range = range
-                          Fixes = [] })
+                        {
+                            Type = "Raw SQL string"
+                            Message =
+                                "Raw SQL string detected — prefer type-safe query builders instead of raw SQL. Add '// MGA-RAWSQL-001:ok' with a reason to suppress."
+                            Code = "MGA-RAWSQL-001"
+                            Severity = Severity.Warning
+                            Range = range
+                            Fixes = []
+                        })
 
                 return messages
         }

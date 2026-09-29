@@ -135,7 +135,8 @@ let ``an editorconfig edit changes the finding without restarting the process`` 
 
     let context =
         { getContextForSource configStalenessSource with
-            FileName = file }
+            FileName = file
+        }
 
     // logError is the configured reporter, so the handler is compliant.
     writeEditorConfig dir "mga_error_reporting_functions = logError"

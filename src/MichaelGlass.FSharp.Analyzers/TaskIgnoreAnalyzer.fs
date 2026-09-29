@@ -17,11 +17,13 @@ open FSharp.Compiler.Text
 
 let private taskTypeNames =
     Set.ofList
-        [ "System.Threading.Tasks.Task"
-          "System.Threading.Tasks.Task`1"
-          "System.Threading.Tasks.ValueTask"
-          "System.Threading.Tasks.ValueTask`1"
-          "Microsoft.FSharp.Control.FSharpAsync`1" ]
+        [
+            "System.Threading.Tasks.Task"
+            "System.Threading.Tasks.Task`1"
+            "System.Threading.Tasks.ValueTask"
+            "System.Threading.Tasks.ValueTask`1"
+            "Microsoft.FSharp.Control.FSharpAsync`1"
+        ]
 
 /// <summary>
 /// Checks if a type (or any of its base types) is a Task or Async type.
@@ -146,8 +148,10 @@ let private isIgnoredExprTaskLike (context: CliContext) (ignoredExpr: SynExpr) :
 
 [<NoComparison; NoEquality>]
 type private IgnoreUsage =
-    { FullRange: range
-      IgnoredExpr: SynExpr }
+    {
+        FullRange: range
+        IgnoredExpr: SynExpr
+    }
 
 /// <summary>
 /// CLI analyzer entry point. Walks AST for <c>ignore</c> calls and uses typed
@@ -168,16 +172,20 @@ let taskIgnoreAnalyzer: Analyzer<CliContext> =
                         isPipeRight op && isIgnoreIdent ignoreExpr
                         ->
                         usages.Add(
-                            { FullRange = expr.Range
-                              IgnoredExpr = innerExpr }
+                            {
+                                FullRange = expr.Range
+                                IgnoredExpr = innerExpr
+                            }
                         )
 
                         false
                     // Pattern: ignore expr (direct call)
                     | SynExpr.App(funcExpr = funcExpr; argExpr = argExpr) when isIgnoreIdent funcExpr ->
                         usages.Add(
-                            { FullRange = expr.Range
-                              IgnoredExpr = argExpr }
+                            {
+                                FullRange = expr.Range
+                                IgnoredExpr = argExpr
+                            }
                         )
 
                         false
@@ -191,13 +199,15 @@ let taskIgnoreAnalyzer: Analyzer<CliContext> =
                     isIgnoredExprTaskLike context usage.IgnoredExpr
                     && not (Suppression.isLineSuppressed context.SourceText usage.FullRange "MGA-TASK-IGNORE-001"))
                 |> List.map (fun usage ->
-                    { Type = "Task |> ignore"
-                      Message =
-                        "Ignoring a Task/Async silently swallows exceptions. Use `fireAndForget` for background tasks or `let! _ =` to explicitly discard. Add '// MGA-TASK-IGNORE-001:ok' to suppress."
-                      Code = "MGA-TASK-IGNORE-001"
-                      Severity = Severity.Warning
-                      Range = usage.FullRange
-                      Fixes = [] })
+                    {
+                        Type = "Task |> ignore"
+                        Message =
+                            "Ignoring a Task/Async silently swallows exceptions. Use `fireAndForget` for background tasks or `let! _ =` to explicitly discard. Add '// MGA-TASK-IGNORE-001:ok' to suppress."
+                        Code = "MGA-TASK-IGNORE-001"
+                        Severity = Severity.Warning
+                        Range = usage.FullRange
+                        Fixes = []
+                    })
 
             return messages
         }

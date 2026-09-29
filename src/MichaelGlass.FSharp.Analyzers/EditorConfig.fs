@@ -57,7 +57,8 @@ let private fileCache = EditorConfigFileCache()
 /// key silently fall back to its default.
 /// </para>
 /// </remarks>
-let private newParser () = EditorConfigParser(FileSystem(), fileCache)
+let private newParser () =
+    EditorConfigParser(FileSystem(), fileCache)
 
 /// <summary>
 /// Gets a single property value from .editorconfig for the given file.

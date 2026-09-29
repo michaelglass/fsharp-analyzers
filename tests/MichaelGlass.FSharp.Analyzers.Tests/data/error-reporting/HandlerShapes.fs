@@ -108,16 +108,20 @@ let inList () =
     try
         [ risky () ] // reports
     with ex ->
-        [ (logError ex
-           0) ]
+        [
+            (logError ex
+             0)
+        ]
 
 let inRecordField () =
     try
         {| Value = risky () |} // reports
     with ex ->
-        {| Value =
-            (logError ex
-             0) |}
+        {|
+            Value =
+                (logError ex
+                 0)
+        |}
 
 type Outcome = { Value: int }
 
@@ -125,16 +129,20 @@ let inNominalRecord () =
     try
         { Value = risky () } // reports
     with ex ->
-        { Value =
-            (logError ex
-             0) }
+        {
+            Value =
+                (logError ex
+                 0)
+        }
 
 let inArray () =
     try
         [| risky () |] // reports
     with ex ->
-        [| (logError ex
-            0) |]
+        [|
+            (logError ex
+             0)
+        |]
 
 let getLogger () = logger
 
