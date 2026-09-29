@@ -5,7 +5,18 @@
 module MichaelGlass.FSharp.Analyzers.EditorConfig
 
 open System
+open System.IO.Abstractions
 open EditorConfig.Core
+
+/// <summary>
+/// Parsed <c>.editorconfig</c> files, shared by every lookup in the process.
+/// </summary>
+/// <remarks>
+/// EditorConfig.Core gives each parser a private file cache unless one is passed in,
+/// and <see cref="newParser"/> builds a parser per lookup, so without this every
+/// lookup would re-read and re-parse each config file in its chain.
+/// </remarks>
+let private fileCache = EditorConfigFileCache()
 
 /// <summary>
 /// Builds the parser for a single lookup.
@@ -26,13 +37,14 @@ open EditorConfig.Core
 /// about 0.07ms, which is the price of an answer that describes the config on disk now.
 /// </para>
 /// <para>
-/// One staleness window is left, and it belongs to the library: EditorConfig.Core keeps
-/// its own process-wide cache of parsed config FILES keyed on path, size and
-/// last-write time. An <c>.editorconfig</c> rewritten to a different content of exactly
-/// the same length with its timestamp preserved is therefore still served from that
-/// cache. Ordinary edits and checkouts move the timestamp, so this is narrow; closing
-/// it means passing a factory that re-reads unconditionally, which measured 3.4x the
-/// cost of the whole lookup and buys nothing for how configuration actually changes.
+/// The parsed config FILES, unlike the resolved chain, are shared: every parser is
+/// handed <see cref="fileCache"/>, EditorConfig.Core's cache of parsed files keyed on
+/// path, size and last-write time. That leaves one staleness window: an
+/// <c>.editorconfig</c> rewritten to a different content of exactly the same length
+/// with its timestamp preserved is still served from the cache. Ordinary edits and
+/// checkouts move the timestamp, so this is narrow; closing it means re-reading every
+/// config file on every lookup, which measured 3.4x the cost of the whole lookup and
+/// buys nothing for how configuration actually changes.
 /// </para>
 /// <para>
 /// Constructing <c>EditorConfigParser</c> loads EditorConfig.Core's transitive
@@ -45,7 +57,7 @@ open EditorConfig.Core
 /// key silently fall back to its default.
 /// </para>
 /// </remarks>
-let private newParser () = EditorConfigParser()
+let private newParser () = EditorConfigParser(FileSystem(), fileCache)
 
 /// <summary>
 /// Gets a single property value from .editorconfig for the given file.
