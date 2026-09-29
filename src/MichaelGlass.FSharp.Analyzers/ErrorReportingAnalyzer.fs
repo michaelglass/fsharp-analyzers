@@ -109,13 +109,15 @@ let analyze (requiredFunctions: Set<string>) (context: CliContext) : Message lis
         |> Seq.toList
         |> List.filter (fun range -> not (Suppression.isLineSuppressed context.SourceText range "MGA-ERROR-REPORT-001"))
         |> List.map (fun range ->
-            { Type = "Missing error reporting"
-              Message =
-                "try/with block does not call a required error-reporting function. Add one of the configured mga_error_reporting_functions, or add '// MGA-ERROR-REPORT-001:ok' to suppress."
-              Code = "MGA-ERROR-REPORT-001"
-              Severity = Severity.Warning
-              Range = range
-              Fixes = [] })
+            {
+                Type = "Missing error reporting"
+                Message =
+                    "try/with block does not call a required error-reporting function. Add one of the configured mga_error_reporting_functions, or add '// MGA-ERROR-REPORT-001:ok' to suppress."
+                Code = "MGA-ERROR-REPORT-001"
+                Severity = Severity.Warning
+                Range = range
+                Fixes = []
+            })
 
 /// <summary>
 /// CLI analyzer entry point. Reads required functions from editorconfig,

@@ -20,9 +20,11 @@ let Code = "MGA-UNSAFE-CALL-001"
 
 /// <summary>Configuration for the three restricted call checks.</summary>
 type Config =
-    { BannedFunctions: Set<string>
-      BannedCallPatterns: Map<string, string>
-      UnsafeDynamicArgFunctions: Set<string> }
+    {
+        BannedFunctions: Set<string>
+        BannedCallPatterns: Map<string, string>
+        UnsafeDynamicArgFunctions: Set<string>
+    }
 
 let private loadConfig (fileName: string) : Config =
     let banned =
@@ -40,9 +42,11 @@ let private loadConfig (fileName: string) : Config =
         EditorConfig.getListProperty fileName "mga_unsafe_dynamic_arg_functions"
         |> Set.ofList
 
-    { BannedFunctions = banned
-      BannedCallPatterns = patterns
-      UnsafeDynamicArgFunctions = unsafeDynamic }
+    {
+        BannedFunctions = banned
+        BannedCallPatterns = patterns
+        UnsafeDynamicArgFunctions = unsafeDynamic
+    }
 
 let private isConfigEmpty (config: Config) =
     Set.isEmpty config.BannedFunctions
@@ -98,9 +102,11 @@ let analyze (config: Config) (context: CliContext) : Message list =
                     | Some name ->
                         if config.BannedFunctions |> Set.exists (fun banned -> matchesFuncName banned name) then
                             diagnostics.Add(
-                                { Range = expr.Range
-                                  Message =
-                                    $"Banned function call '%s{name}' is not allowed. Add '// %s{Code}:ok' with a reason to suppress." }
+                                {
+                                    Range = expr.Range
+                                    Message =
+                                        $"Banned function call '%s{name}' is not allowed. Add '// %s{Code}:ok' with a reason to suppress."
+                                }
                             )
                     | None -> ()
                 | _ -> ()
@@ -119,9 +125,11 @@ let analyze (config: Config) (context: CliContext) : Message list =
                             match getStringValue argExpr with
                             | Some actualValue when actualValue = expectedValue ->
                                 diagnostics.Add(
-                                    { Range = expr.Range
-                                      Message =
-                                        $"Banned call pattern '%s{name} \"%s{expectedValue}\"' is not allowed. Add '// %s{Code}:ok' with a reason to suppress." }
+                                    {
+                                        Range = expr.Range
+                                        Message =
+                                            $"Banned call pattern '%s{name} \"%s{expectedValue}\"' is not allowed. Add '// %s{Code}:ok' with a reason to suppress."
+                                    }
                                 )
                             | _ -> ()
                         | None -> ()
@@ -132,9 +140,11 @@ let analyze (config: Config) (context: CliContext) : Message list =
                             && not (isStringLiteral argExpr)
                         then
                             diagnostics.Add(
-                                { Range = expr.Range
-                                  Message =
-                                    $"'%s{name}' called with a dynamic argument — only string literals are safe here. Add '// %s{Code}:ok' with a reason to suppress." }
+                                {
+                                    Range = expr.Range
+                                    Message =
+                                        $"'%s{name}' called with a dynamic argument — only string literals are safe here. Add '// %s{Code}:ok' with a reason to suppress."
+                                }
                             )
                     | None -> ()
                 | _ -> ()
@@ -146,12 +156,14 @@ let analyze (config: Config) (context: CliContext) : Message list =
         |> Seq.toList
         |> List.filter (fun d -> not (Suppression.isLineSuppressed context.SourceText d.Range Code))
         |> List.map (fun d ->
-            { Type = "Restricted call"
-              Message = d.Message
-              Code = Code
-              Severity = Severity.Warning
-              Range = d.Range
-              Fixes = [] })
+            {
+                Type = "Restricted call"
+                Message = d.Message
+                Code = Code
+                Severity = Severity.Warning
+                Range = d.Range
+                Fixes = []
+            })
 
 /// <summary>
 /// CLI analyzer entry point. Reads configuration from editorconfig,

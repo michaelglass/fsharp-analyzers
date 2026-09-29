@@ -77,11 +77,13 @@ let ``package bundles EditorConfig.Core's transitive dependency closure`` () =
 
     // EditorConfig.Core itself plus every transitive runtime dep it loads at construction.
     let required =
-        [ "EditorConfig.Core.dll"
-          "System.IO.Abstractions.dll"
-          "TestableIO.System.IO.Abstractions.dll"
-          "TestableIO.System.IO.Abstractions.Wrappers.dll"
-          "Testably.Abstractions.FileSystem.Interface.dll" ]
+        [
+            "EditorConfig.Core.dll"
+            "System.IO.Abstractions.dll"
+            "TestableIO.System.IO.Abstractions.dll"
+            "TestableIO.System.IO.Abstractions.Wrappers.dll"
+            "Testably.Abstractions.FileSystem.Interface.dll"
+        ]
 
     let missing = required |> List.filter (fun d -> not (Set.contains d dlls))
     test <@ List.isEmpty missing @>
@@ -93,12 +95,14 @@ let ``package omits host-provided assemblies to avoid load conflicts`` () =
     // These are supplied by the analyzer host (FSharp.Analyzers.SDK) or are build-time
     // only; bundling them would collide with the host's own copies.
     let hostProvided =
-        [ "FSharp.Analyzers.SDK.dll"
-          "FSharp.Compiler.Service.dll"
-          "FSharp.Core.dll"
-          "McMaster.NETCore.Plugins.dll"
-          "Microsoft.Extensions.Logging.Abstractions.dll"
-          "System.IO.Hashing.dll" ]
+        [
+            "FSharp.Analyzers.SDK.dll"
+            "FSharp.Compiler.Service.dll"
+            "FSharp.Core.dll"
+            "McMaster.NETCore.Plugins.dll"
+            "Microsoft.Extensions.Logging.Abstractions.dll"
+            "System.IO.Hashing.dll"
+        ]
 
     let leaked = hostProvided |> List.filter (fun d -> Set.contains d dlls)
     test <@ List.isEmpty leaked @>

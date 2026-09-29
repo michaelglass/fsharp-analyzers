@@ -113,3 +113,25 @@ let ``a config file appearing and disappearing mid-chain changes the answer`` ()
     // ...and DISAPPEARS again, restoring the root's value.
     File.Delete(Path.Combine(nested, ".editorconfig"))
     test <@ getListProperty file "my_list_key" = [ "alpha" ] @>
+
+[<Fact>]
+let ``a same-length rewrite with its timestamp restored is still served from the file cache`` () =
+    // Pins the one staleness window EditorConfig.fs documents, and with it that parsed
+    // config files are shared across lookups. EditorConfig.Core keys its file cache on
+    // path, size and last-write time; a rewrite that changes none of the three is only
+    // noticed by a lookup that re-reads the file, which is the cost this module declines
+    // to pay per lookup. If this goes red, lookups have started re-reading every config
+    // file (e.g. a library upgrade made the cache per-parser again) — revisit the cost
+    // trade-off in EditorConfig.fs rather than deleting the test.
+    let dir = newConfiguredTree ()
+    let file = Path.Combine(dir, "Sample.fs")
+    File.WriteAllText(file, "module Sample\n")
+
+    writeEditorConfig dir "my_list_key = alpha"
+    let configPath = Path.Combine(dir, ".editorconfig")
+    let stamp = File.GetLastWriteTimeUtc configPath
+    test <@ getListProperty file "my_list_key" = [ "alpha" ] @>
+
+    writeEditorConfig dir "my_list_key = bravo"
+    File.SetLastWriteTimeUtc(configPath, stamp)
+    test <@ getListProperty file "my_list_key" = [ "alpha" ] @>

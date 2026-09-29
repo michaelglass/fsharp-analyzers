@@ -89,8 +89,8 @@
   <ItemGroup>
     <PackageReference Update="FSharp.Core" Version="10.1.*" />
     <PackageReference Include="FSharp.Analyzers.SDK" Version="0.39.2" />
-    <PackageReference Include="editorconfig" Version="0.16.2" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.303" PrivateAssets="All" />
+    <PackageReference Include="editorconfig" Version="0.18.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

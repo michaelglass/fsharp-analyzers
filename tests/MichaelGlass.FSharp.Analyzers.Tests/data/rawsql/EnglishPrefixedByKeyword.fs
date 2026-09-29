@@ -4,13 +4,17 @@ module TestData.SqlInDocComment
 // UPDATE) must not be flagged as raw SQL. Typical shape: a record of localized
 // UI copy.
 type Translations =
-    { SignUpSubtitle: string
-      CreateAccount: string
-      DeleteAccount: string
-      UpdateTopic: string }
+    {
+        SignUpSubtitle: string
+        CreateAccount: string
+        DeleteAccount: string
+        UpdateTopic: string
+    }
 
 let private en: Translations =
-    { SignUpSubtitle = "Create your account to start receiving personalized legal briefings"
-      CreateAccount = "Create account"
-      DeleteAccount = "Delete Account"
-      UpdateTopic = "Update Topic" }
+    {
+        SignUpSubtitle = "Create your account to start receiving personalized legal briefings"
+        CreateAccount = "Create account"
+        DeleteAccount = "Delete Account"
+        UpdateTopic = "Update Topic"
+    }

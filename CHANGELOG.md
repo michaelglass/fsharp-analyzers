@@ -3,6 +3,7 @@
 ## Unreleased
 
 - fix: **MGA-ERROR-REPORT-001** no longer flags a handler that reports from inside a list or array expression (`[ ... ]`, `[| ... |]`) or an anonymous record (`{| ... |}`). The handler walk looked through tuples and nominal records but not these shapes, so a report call there was invisible and the try/with was flagged as silent.
+- chore(deps): bump bundled `editorconfig` (EditorConfig.Core) 0.16.2 → 0.18.0. 0.17 made its parsed-file cache private to each parser instead of process-wide; the analyzers build a parser per lookup, so they now pass one shared cache explicitly and keep re-using parsed `.editorconfig` files between lookups, as before.
 
 ## 0.1.0-alpha.7 - 2026-09-26
 
