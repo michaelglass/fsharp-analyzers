@@ -18,64 +18,19 @@ let private getRequiredFunctions (fileName: string) =
     EditorConfig.getListProperty fileName "mga_error_reporting_functions"
     |> Set.ofList
 
-let private isRequiredCall (requiredFunctions: Set<string>) (name: string) = Set.contains name requiredFunctions
-
 /// <summary>
-/// Recursively checks if an expression contains a call to any required error-reporting function.
+/// True when <paramref name="expr"/> names one of the required error-reporting functions,
+/// bare (<c>logError</c>), qualified (<c>Log.logError</c>) or as a member
+/// (<c>logger.captureError</c>, <c>(getLogger ()).captureError</c>).
 /// </summary>
-let rec private containsRequiredCall (requiredFunctions: Set<string>) (expr: SynExpr) : bool =
-    let recurse = containsRequiredCall requiredFunctions
-    let isRequired = isRequiredCall requiredFunctions
+let private isReportingReference (requiredFunctions: Set<string>) (expr: SynExpr) : bool =
+    let isRequired (id: Ident) =
+        Set.contains id.idText requiredFunctions
 
     match expr with
-    | SynExpr.Ident id -> isRequired id.idText
-    | SynExpr.LongIdent(longDotId = SynLongIdent(id = ids)) -> ids |> List.exists (fun id -> isRequired id.idText)
-    | SynExpr.DotGet(expr = inner; longDotId = SynLongIdent(id = ids)) ->
-        ids |> List.exists (fun id -> isRequired id.idText) || recurse inner
-    | SynExpr.App(funcExpr = func; argExpr = arg) -> recurse func || recurse arg
-    | SynExpr.Paren(expr = inner) -> recurse inner
-    | SynExpr.Typed(expr = inner) -> recurse inner
-    | SynExpr.Sequential(expr1 = e1; expr2 = e2) -> recurse e1 || recurse e2
-    | SynExpr.LetOrUse { Bindings = bindings; Body = body } ->
-        bindings |> List.exists (fun (SynBinding(expr = e)) -> recurse e)
-        || recurse body
-    | SynExpr.IfThenElse(ifExpr = cond; thenExpr = thenExpr; elseExpr = elseExprOpt) ->
-        recurse cond
-        || recurse thenExpr
-        || (match elseExprOpt with
-            | Some e -> recurse e
-            | None -> false)
-    | SynExpr.Match(clauses = clauses)
-    | SynExpr.MatchLambda(matchClauses = clauses)
-    | SynExpr.MatchBang(clauses = clauses) ->
-        clauses |> List.exists (fun (SynMatchClause(resultExpr = body)) -> recurse body)
-    | SynExpr.TryWith(tryExpr = body; withCases = clauses) ->
-        recurse body
-        || clauses |> List.exists (fun (SynMatchClause(resultExpr = body)) -> recurse body)
-    | SynExpr.TryFinally(tryExpr = body; finallyExpr = fin) -> recurse body || recurse fin
-    | SynExpr.ComputationExpr(expr = expr) -> recurse expr
-    | SynExpr.Lambda(body = body) -> recurse body
-    | SynExpr.DoBang(expr = expr) -> recurse expr
-    | SynExpr.YieldOrReturn(expr = expr) -> recurse expr
-    | SynExpr.YieldOrReturnFrom(expr = expr) -> recurse expr
-    | SynExpr.ForEach(bodyExpr = body) -> recurse body
-    | SynExpr.Tuple(exprs = exprs) -> exprs |> List.exists recurse
-    | SynExpr.ArrayOrList(exprs = exprs) -> exprs |> List.exists recurse
-    | SynExpr.ArrayOrListComputed(expr = inner) -> recurse inner
-    | SynExpr.Record(copyInfo = copyExprOpt; recordFields = fields) ->
-        (match copyExprOpt with
-         | Some(e, _) -> recurse e
-         | None -> false)
-        || fields
-           |> List.exists (fun (SynExprRecordField(expr = exprOpt)) ->
-               match exprOpt with
-               | Some e -> recurse e
-               | None -> false)
-    | SynExpr.AnonRecd(copyInfo = copyExprOpt; recordFields = fields) ->
-        (match copyExprOpt with
-         | Some(e, _) -> recurse e
-         | None -> false)
-        || fields |> List.exists (fun (_, _, e) -> recurse e)
+    | SynExpr.Ident id -> isRequired id
+    | SynExpr.LongIdent(longDotId = SynLongIdent(id = ids))
+    | SynExpr.DotGet(longDotId = SynLongIdent(id = ids)) -> List.exists isRequired ids
     | _ -> false
 
 /// <summary>
@@ -97,7 +52,7 @@ let analyze (requiredFunctions: Set<string>) (context: CliContext) : Message lis
                     if
                         clauses
                         |> List.exists (fun (SynMatchClause(resultExpr = handlerBody)) ->
-                            not (containsRequiredCall requiredFunctions handlerBody))
+                            not (AstWalk.existsExpr (isReportingReference requiredFunctions) handlerBody))
                     then
                         ranges.Add(tryWithRange)
 
