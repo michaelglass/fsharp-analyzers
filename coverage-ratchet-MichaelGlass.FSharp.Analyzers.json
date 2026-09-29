@@ -1,28 +1,23 @@
 {
   "overrides": {
     "AstWalk.fs": {
-      "line": 33,
-      "branch": 44,
-      "reason": "loosened automatically"
-    },
-    "EditorConfig.fs": {
-      "line": 85,
-      "branch": 100,
+      "line": 45,
+      "branch": 53,
       "reason": "loosened automatically"
     },
     "ErrorReportingAnalyzer.fs": {
-      "line": 48,
-      "branch": 18,
+      "line": 90,
+      "branch": 87,
       "reason": "loosened automatically"
     },
     "RawSqlAnalyzer.fs": {
       "line": 83,
-      "branch": 35,
+      "branch": 88,
       "reason": "loosened automatically"
     },
     "RestrictedCallAnalyzer.fs": {
       "line": 81,
-      "branch": 75,
+      "branch": 95,
       "reason": "loosened automatically"
     },
     "Suppression.fs": {
@@ -32,9 +27,9 @@
     },
     "TaskIgnoreAnalyzer.fs": [
       {
-        "line": 76.78571428571429,
-        "branch": 39.84375,
-        "reason": "Measured on macOS (CodeCoverage 18.9.0, SDK 10.0.400): 86/112 lines, 102/256 branches; the same branch total Linux CI instruments.",
+        "line": 86,
+        "branch": 42,
+        "reason": "Measured on macOS (CodeCoverage 18.9.0, SDK 10.0.400): 97/112 lines, 108/256 branches; the same branch total Linux CI instruments. Uncovered: the try/with fallbacks around FCS type queries, the CompiledName fallback when TryFullName is None, empty-LongIdent arms the parser never produces, and a bare op_PipeRight identifier.",
         "platform": "macos"
       },
       {
@@ -46,7 +41,7 @@
     ],
     "WildcardAnalyzer.fs": {
       "line": 84,
-      "branch": 60,
+      "branch": 87,
       "reason": "loosened automatically"
     }
   }
