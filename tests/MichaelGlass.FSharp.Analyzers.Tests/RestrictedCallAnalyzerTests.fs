@@ -76,3 +76,50 @@ let ``returns empty with no config`` () =
     let messages = analyze emptyConfig context
 
     test <@ messages.Length = 0 @>
+
+// --- The CLI entry point, configured from .editorconfig ------------------------------
+// The tests above hand `analyze` a Config directly. A host only ever calls the
+// [<CliAnalyzer>] entry point, which builds that Config from the analysed file's
+// .editorconfig; these run the same fixtures through that path.
+
+let private runFromEditorConfig (properties: string) (fixture: string) =
+    let dir = newConfiguredTree ()
+    writeEditorConfig dir properties
+    let source = readTestData [ "restricted-call"; fixture ]
+
+    let context =
+        { getContextForSource source with
+            FileName = System.IO.Path.Combine(dir, fixture)
+        }
+
+    restrictedCallAnalyzer context |> Async.RunSynchronously
+
+let private allThreeChecks =
+    "mga_banned_functions = Task.WhenAll, Thread.Sleep\n"
+    + "mga_banned_call_patterns = Attr.type':submit\n"
+    + "mga_unsafe_dynamic_arg_functions = Text.raw"
+
+[<Theory>]
+[<InlineData("BannedFunction.fs")>]
+[<InlineData("BannedCallPattern.fs")>]
+[<InlineData("UnsafeDynamicArg.fs")>]
+let ``the entry point reads each check from editorconfig`` (fixture: string) =
+    let messages = runFromEditorConfig allThreeChecks fixture
+
+    test <@ messages |> List.map _.Code = [ "MGA-UNSAFE-CALL-001" ] @>
+
+[<Fact>]
+let ``the entry point reports nothing when editorconfig configures no check`` () =
+    let messages = runFromEditorConfig "unrelated_key = 1" "BannedFunction.fs"
+
+    test <@ List.isEmpty messages @>
+
+[<Fact>]
+let ``a call pattern without a colon is skipped, not read as a pattern`` () =
+    // `name:value` is the only shape. The malformed entry comes AFTER a valid one for the
+    // same function: were it read as a pattern (with any value), it would replace the
+    // valid entry in the map and the fixture's `submit` call would go unreported.
+    let messages =
+        runFromEditorConfig "mga_banned_call_patterns = Attr.type':submit, Attr.type'" "BannedCallPattern.fs"
+
+    test <@ messages |> List.map _.Code = [ "MGA-UNSAFE-CALL-001" ] @>
