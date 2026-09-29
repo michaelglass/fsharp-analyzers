@@ -17,6 +17,13 @@ let ``flags raw SQL string`` () =
     test <@ messages.[0].Severity = Severity.Warning @>
 
 [<Fact>]
+let ``flags raw SQL string inside an anonymous record`` () =
+    let source = readTestData [ "rawsql"; "RawSqlInAnonRecord.fs" ]
+    let messages = rawSqlAnalyzer (getContextForSource source) |> Async.RunSynchronously
+
+    test <@ messages |> List.map _.Code = [ "MGA-RAWSQL-001" ] @>
+
+[<Fact>]
 let ``flags a short upper-cased SQL statement without a FROM clause`` () =
     let source = readTestData [ "rawsql"; "UppercaseSelectOne.fs" ]
     let context = getContextForSource source

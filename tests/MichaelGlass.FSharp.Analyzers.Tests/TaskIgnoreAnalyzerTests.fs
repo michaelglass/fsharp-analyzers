@@ -55,15 +55,7 @@ let ``flags every ignore shape that discards a Task, ValueTask or Async, and not
     let context = getContextForSource source
     let messages = taskIgnoreAnalyzer context |> Async.RunSynchronously
 
-    let lines = source.Split('\n')
+    let expected = linesMarkedWith "// flag" source
 
-    let expected =
-        lines
-        |> Array.indexed
-        |> Array.choose (fun (i, l) -> if l.EndsWith("// flag") then Some(i + 1) else None)
-        |> Array.toList
-
-    let flagged = messages |> List.map (fun m -> m.Range.StartLine) |> List.sort
-
-    test <@ expected.Length = 7 @>
-    test <@ flagged = expected @>
+    test <@ expected.Length = 8 @>
+    test <@ flaggedLines messages = expected @>
