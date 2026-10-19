@@ -12,6 +12,7 @@
     <Compile Include="Common.fs" />
     <Compile Include="PackagingTests.fs" />
     <Compile Include="SuppressionTests.fs" />
+    <Compile Include="AstWalkTests.fs" />
     <Compile Include="EditorConfigTests.fs" />
     <Compile Include="WildcardAnalyzerTests.fs" />
     <Compile Include="TaskIgnoreAnalyzerTests.fs" />
