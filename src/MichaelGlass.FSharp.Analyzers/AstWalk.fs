@@ -171,6 +171,9 @@ let private walkers (visitExpr: SynExpr -> bool) =
             getBinding |> Option.iter walkBinding
             setBinding |> Option.iter walkBinding
         | SynMemberDefn.AutoProperty(synExpr = expr) -> walkExpr expr
+        | SynMemberDefn.Interface(members = Some interfaceMembers) ->
+            for m in interfaceMembers do
+                walkMemberDefn m
         | _ -> ()
 
     walkExpr, walkBinding, walkMemberDefn
@@ -232,9 +235,18 @@ let walkParseTree (visitExpr: SynExpr -> bool) (parseTree: ParsedInput) : unit =
                 walkTypeDef typeDef
         | _ -> ()
 
+    // A class's own members (`type T() = member …`) live in the object-model representation;
+    // `SynTypeDefn.members` holds only augmentation members (`{ … } with member …`).
     and walkTypeDef (typeDef: SynTypeDefn) =
         match typeDef with
-        | SynTypeDefn(members = members) ->
+        | SynTypeDefn(typeRepr = repr; members = members) ->
+            match repr with
+            | SynTypeDefnRepr.ObjectModel(members = objMembers) ->
+                for mem in objMembers do
+                    walkMemberDefn mem
+            | SynTypeDefnRepr.Simple _
+            | SynTypeDefnRepr.Exception _ -> ()
+
             for mem in members do
                 walkMemberDefn mem
 
