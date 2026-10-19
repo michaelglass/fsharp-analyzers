@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.0-alpha.1 - 2026-10-19
+
 - fix: every rule now sees inside class bodies and interface implementations. `walkParseTree` walked only a type's augmentation members (`SynTypeDefn.members`, the `{ … } with member …` form), never its object-model members, so a class's own `member`, `let`, `member val` and get/set bindings, and any `interface … with` implementation inside a class, were never visited. MGA-RAWSQL-001, MGA-ERROR-REPORT-001, MGA-TASK-IGNORE-001, MGA-WILDCARD-001 and MGA-UNSAFE-CALL-001 were silently blind there — including xUnit class fixtures and hosted-service members — and reported nothing found, which reads the same as nothing being there. Upgrading can surface findings (and bind `:ok` markers) in class members that earlier releases never inspected.
 
 ## 0.1.0-alpha.8 - 2026-09-29
