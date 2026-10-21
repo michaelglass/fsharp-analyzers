@@ -43,12 +43,17 @@ let analyze (requiredFunctions: Set<string>) (context: CliContext) : Message lis
     if Set.isEmpty requiredFunctions then
         []
     else
+        // Every try/with is a site, compliant or not: a marker written for an inner
+        // try that reports anyway must not reach the outer try around it.
+        let sites = ResizeArray<range>()
         let ranges = ResizeArray<range>()
 
         AstWalk.walkParseTree
             (fun expr ->
                 match expr with
                 | SynExpr.TryWith(withCases = clauses; range = tryWithRange) ->
+                    sites.Add(tryWithRange)
+
                     if
                         clauses
                         |> List.exists (fun (SynMatchClause(resultExpr = handlerBody)) ->
@@ -60,9 +65,12 @@ let analyze (requiredFunctions: Set<string>) (context: CliContext) : Message lis
                 | _ -> true)
             context.ParseFileResults.ParseTree
 
+        let isSuppressed =
+            Suppression.suppressor context.SourceText "MGA-ERROR-REPORT-001" (Seq.toList sites)
+
         ranges
         |> Seq.toList
-        |> List.filter (fun range -> not (Suppression.isLineSuppressed context.SourceText range "MGA-ERROR-REPORT-001"))
+        |> List.filter (fun range -> not (isSuppressed range))
         |> List.map (fun range ->
             {
                 Type = "Missing error reporting"

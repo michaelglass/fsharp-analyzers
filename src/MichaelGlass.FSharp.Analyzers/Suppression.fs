@@ -1,9 +1,24 @@
 /// <summary>
 /// Checks inline suppression comments that silence specific analyzer diagnostics.
-/// A diagnostic is suppressed when the marker <c>// {CODE}:ok</c> appears on any line
-/// of the diagnostic's own range, on the line immediately above it, or anywhere in the
-/// contiguous <c>//</c> comment block directly above it.
+/// A marker <c>// {CODE}:ok</c> can sit on the construct's first line, on the line
+/// immediately above it, anywhere in the contiguous <c>//</c> comment block directly
+/// above it, or on any later line of the construct's own range.
 /// </summary>
+/// <remarks>
+/// <para><b>One marker, one site.</b> A marker binds only the construct it is written
+/// for, never one that merely encloses it. When several of a rule's sites could hold
+/// the same marker line, it binds the one it is nearest to, in this order:</para>
+/// <list type="number">
+/// <item>a site whose first line the marker is on (a trailing comment on that line);</item>
+/// <item>a site the marker is written above (the line above it, or its comment block);</item>
+/// <item>the innermost site whose range holds the marker: the one starting nearest
+/// above it, then the shortest.</item>
+/// </list>
+/// <para>So a marker in an inner <c>try</c>'s handler, or above an inner <c>try</c>,
+/// suppresses that inner <c>try</c> and not the outer one that contains it. Sites that
+/// tie on all three (two flagged literals on one line, say) are bound together: no
+/// placement can tell them apart.</para>
+/// </remarks>
 module MichaelGlass.FSharp.Analyzers.Suppression
 
 open System
@@ -14,42 +29,65 @@ let private isCommentLine (line: string) =
     line.TrimStart().StartsWith("//", StringComparison.Ordinal)
 
 /// <summary>
-/// Checks whether a diagnostic at the given range is suppressed by an inline comment.
-/// Looks for <c>{code}:ok</c> on any line within the range, on the line immediately
-/// before it, or on any line of the contiguous comment block above it — so a marker
-/// written above its own multi-line justification still binds.
-/// The comment block ends at the first blank line or line of code, which is what keeps
-/// a marker that has drifted away from its construct from suppressing something else.
+/// How a marker on 0-based line <paramref name="markerIdx"/> sits relative to
+/// <paramref name="site"/>, as a rank where lower binds first; <c>None</c> when the
+/// marker cannot bind the site at all.
+/// </summary>
+let private placementRank (lines: string array) (site: range) (markerIdx: int) : (int * int * int) option =
+    let startIdx = site.StartLine - 1
+    let endIdx = site.EndLine - 1
+
+    // The contiguous comment block above the site. It ends at the first blank
+    // line, line of code, or the start of the file, which is what keeps a marker
+    // that has drifted away from its construct from suppressing something else.
+    let inCommentBlockAbove () =
+        markerIdx < startIdx - 1
+        && seq { markerIdx .. startIdx - 1 }
+           |> Seq.forall (fun idx -> isCommentLine lines.[idx])
+
+    if markerIdx = startIdx then
+        Some(0, 0, 0)
+    elif markerIdx = startIdx - 1 || inCommentBlockAbove () then
+        Some(1, startIdx - markerIdx, 0)
+    elif markerIdx > startIdx && markerIdx <= endIdx then
+        Some(2, markerIdx - startIdx, endIdx - startIdx)
+    else
+        None
+
+/// <summary>The sites one marker binds: those it can bind at the lowest rank.</summary>
+let private bound (lines: string array) (sites: range list) (markerIdx: int) : range list =
+    let ranked =
+        sites
+        |> List.choose (fun site -> placementRank lines site markerIdx |> Option.map (fun rank -> rank, site))
+
+    match ranked with
+    | [] -> []
+    | _ ->
+        let best = ranked |> List.map fst |> List.min
+        ranked |> List.filter (fun (rank, _) -> rank = best) |> List.map snd
+
+/// <summary>
+/// Builds the suppression test for one rule over one file.
 /// </summary>
 /// <param name="sourceText">The source text of the file being analyzed.</param>
-/// <param name="range">The range of the diagnostic to check.</param>
 /// <param name="code">The analyzer diagnostic code (e.g. "MGA-WILDCARD-001").</param>
-/// <returns>True if a suppression comment is found.</returns>
-let isLineSuppressed (sourceText: ISourceText) (range: range) (code: string) : bool =
-    try
-        let lineCount = sourceText.GetLineCount()
-        let marker = code + ":ok"
+/// <param name="sites">
+/// Every construct of this rule in the file: the ones it flags and, where the rule
+/// inspects constructs it then passes, those too. A marker belongs to the nearest
+/// of these, so a site left out could let its marker reach one that encloses it.
+/// </param>
+/// <returns>A predicate: true when a marker binds the diagnostic at that range.</returns>
+let suppressor (sourceText: ISourceText) (code: string) (sites: range list) : range -> bool =
+    let marker = code + ":ok"
 
-        let tryLine idx =
-            if idx >= 0 && idx < lineCount then
-                Some(sourceText.GetLineString idx)
-            else
-                None
+    let lines =
+        Array.init (sourceText.GetLineCount()) (fun idx -> sourceText.GetLineString idx)
 
-        let checkLine idx =
-            tryLine idx |> Option.exists (fun line -> line.Contains marker)
+    let suppressed =
+        lines
+        |> Array.indexed
+        |> Array.filter (fun (_, line) -> line.Contains(marker, StringComparison.Ordinal))
+        |> Array.toList
+        |> List.collect (fun (idx, _) -> bound lines sites idx)
 
-        let startIdx = range.StartLine - 1
-        let endIdx = range.EndLine - 1
-
-        // Line indices of the contiguous comment block immediately above the range,
-        // walking upwards; stops at the first blank line, line of code, or file start.
-        let precedingCommentBlock =
-            Seq.initInfinite (fun offset -> startIdx - 1 - offset)
-            |> Seq.takeWhile (fun idx -> tryLine idx |> Option.exists isCommentLine)
-
-        checkLine (startIdx - 1)
-        || Seq.exists checkLine precedingCommentBlock
-        || (seq { startIdx..endIdx } |> Seq.exists checkLine)
-    with _ ->
-        false
+    fun range -> suppressed |> List.exists (fun site -> Range.equals site range)

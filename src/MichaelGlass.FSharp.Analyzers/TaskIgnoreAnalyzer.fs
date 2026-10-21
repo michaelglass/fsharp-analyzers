@@ -192,12 +192,20 @@ let taskIgnoreAnalyzer: Analyzer<CliContext> =
                     | _ -> true)
                 context.ParseFileResults.ParseTree
 
-            let messages =
+            let taskLike =
                 usages
                 |> Seq.toList
-                |> List.filter (fun usage ->
-                    isIgnoredExprTaskLike context usage.IgnoredExpr
-                    && not (Suppression.isLineSuppressed context.SourceText usage.FullRange "MGA-TASK-IGNORE-001"))
+                |> List.filter (fun usage -> isIgnoredExprTaskLike context usage.IgnoredExpr)
+
+            let isSuppressed =
+                Suppression.suppressor
+                    context.SourceText
+                    "MGA-TASK-IGNORE-001"
+                    (taskLike |> List.map (fun usage -> usage.FullRange))
+
+            let messages =
+                taskLike
+                |> List.filter (fun usage -> not (isSuppressed usage.FullRange))
                 |> List.map (fun usage ->
                     {
                         Type = "Task |> ignore"

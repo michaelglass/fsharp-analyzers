@@ -98,10 +98,11 @@ let rawSqlAnalyzer: Analyzer<CliContext> =
 
                 let ranges = ranges |> Seq.toList
 
+                let isSuppressed = Suppression.suppressor context.SourceText "MGA-RAWSQL-001" ranges
+
                 let messages =
                     ranges
-                    |> List.filter (fun range ->
-                        not (Suppression.isLineSuppressed context.SourceText range "MGA-RAWSQL-001"))
+                    |> List.filter (fun range -> not (isSuppressed range))
                     |> List.map (fun range ->
                         {
                             Type = "Raw SQL string"

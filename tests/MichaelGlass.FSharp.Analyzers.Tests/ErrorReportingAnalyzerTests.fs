@@ -108,6 +108,99 @@ let riskyOperation () =
     test <@ messages.Length = 1 @>
     test <@ messages.[0].Code = "MGA-ERROR-REPORT-001" @>
 
+// --- One marker, one site, end to end ---------------------------------------------
+// A try/with's range is the whole expression, handler included, so before markers
+// were bound to their nearest site a marker in an INNER try's handler also silenced
+// the OUTER try around it (a cleanup-then-reraise shape), and one marker covered two
+// sites, only one of them justified.
+
+[<Fact>]
+let ``a marker in a nested handler suppresses the nested try and not the try around it`` () =
+    let source =
+        """module TestData.MarkerInNestedHandler
+
+let riskyOperation () =
+    try
+        try
+            failwith "boom"
+        with _ ->
+            // MGA-ERROR-REPORT-001:ok - the inner failure is expected and retried below.
+            ()
+    with ex ->
+        printfn "caught: %A" ex
+"""
+
+    let context = getContextForSource source
+    let messages = analyze requiredFunctions context
+
+    test <@ flaggedLines messages = [ 4 ] @>
+
+[<Fact>]
+let ``a marker above a nested try suppresses it and not the try around it`` () =
+    let source =
+        """module TestData.MarkerAboveNestedTry
+
+let riskyOperation () =
+    try
+        // MGA-ERROR-REPORT-001:ok - the inner failure is expected and retried below.
+        try
+            failwith "boom"
+        with _ ->
+            ()
+    with ex ->
+        printfn "caught: %A" ex
+"""
+
+    let context = getContextForSource source
+    let messages = analyze requiredFunctions context
+
+    test <@ flaggedLines messages = [ 4 ] @>
+
+[<Fact>]
+let ``a marker in a compliant nested try's handler does not reach the try around it`` () =
+    let source =
+        """module TestData.MarkerInCompliantNestedHandler
+
+let logError (ex: exn) = printfn "logged: %A" ex
+
+let riskyOperation () =
+    try
+        try
+            failwith "boom"
+        with ex ->
+            // MGA-ERROR-REPORT-001:ok - written for the inner try, which reports anyway.
+            logError ex
+    with ex ->
+        printfn "caught: %A" ex
+"""
+
+    let context = getContextForSource source
+    let messages = analyze requiredFunctions context
+
+    test <@ flaggedLines messages = [ 6 ] @>
+
+[<Fact>]
+let ``a marker in each handler suppresses both tries`` () =
+    let source =
+        """module TestData.MarkerInEachHandler
+
+let riskyOperation () =
+    try
+        try
+            failwith "boom"
+        with _ ->
+            // MGA-ERROR-REPORT-001:ok - the inner failure is expected and retried below.
+            ()
+    with ex ->
+        // MGA-ERROR-REPORT-001:ok - the outer failure is reported by the caller.
+        printfn "caught: %A" ex
+"""
+
+    let context = getContextForSource source
+    let messages = analyze requiredFunctions context
+
+    test <@ messages.Length = 0 @>
+
 // --- Configuration that changes under a long-lived process -------------------------
 // The whole analyzer, through its real CLI entry point, in one process: exactly the
 // shape of an analyzer host that stays up across an .editorconfig edit. The host

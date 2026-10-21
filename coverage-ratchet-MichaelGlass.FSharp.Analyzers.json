@@ -23,8 +23,8 @@
     "TaskIgnoreAnalyzer.fs": [
       {
         "line": 87,
-        "branch": 42,
-        "reason": "Measured on macOS (CodeCoverage 18.9.0, SDK 10.0.400): 97/112 lines, 108/256 branches; the same branch total Linux CI instruments. Uncovered: the try/with fallbacks around FCS type queries, the CompiledName fallback when TryFullName is None, empty-LongIdent arms the parser never produces, and a bare op_PipeRight identifier.",
+        "branch": 41,
+        "reason": "Measured on macOS (CodeCoverage 18.9.0, SDK 10.0.401): 106/254 branches, after one-marker-one-site removed the covered `isIgnoredExprTaskLike && not suppressed` short-circuit from the message filter (both of its branches were covered, so 108/256 became 106/254 = 41.7% with nothing left untested). Earlier: 97/112 lines, 108/256 branches; the same branch total Linux CI instruments. Uncovered: the try/with fallbacks around FCS type queries, the CompiledName fallback when TryFullName is None, empty-LongIdent arms the parser never produces, and a bare op_PipeRight identifier.",
         "platform": "macos"
       },
       {

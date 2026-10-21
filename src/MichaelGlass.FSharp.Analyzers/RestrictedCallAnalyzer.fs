@@ -153,9 +153,13 @@ let analyze (config: Config) (context: CliContext) : Message list =
                 true)
             context.ParseFileResults.ParseTree
 
+        let diagnostics = diagnostics |> Seq.toList
+
+        let isSuppressed =
+            Suppression.suppressor context.SourceText Code (diagnostics |> List.map (fun d -> d.Range))
+
         diagnostics
-        |> Seq.toList
-        |> List.filter (fun d -> not (Suppression.isLineSuppressed context.SourceText d.Range Code))
+        |> List.filter (fun d -> not (isSuppressed d.Range))
         |> List.map (fun d ->
             {
                 Type = "Restricted call"

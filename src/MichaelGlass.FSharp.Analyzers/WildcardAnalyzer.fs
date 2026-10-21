@@ -187,10 +187,12 @@ let wildcardAnalyzer: Analyzer<CliContext> =
 
             let wildcardRanges = ranges |> Seq.toList
 
+            let isSuppressed =
+                Suppression.suppressor context.SourceText "MGA-WILDCARD-001" wildcardRanges
+
             let messages =
                 wildcardRanges
-                |> List.filter (fun range ->
-                    not (Suppression.isLineSuppressed context.SourceText range "MGA-WILDCARD-001"))
+                |> List.filter (fun range -> not (isSuppressed range))
                 |> List.map (fun range ->
                     {
                         Type = "Wildcard on DU"

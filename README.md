@@ -77,6 +77,25 @@ The block ends at the first blank line or line of code. A marker separated from 
 construct that way does not suppress — which is what stops a marker left behind by an
 earlier edit from silencing whatever moved in underneath it.
 
+A marker may also sit on a later line of the flagged construct itself, such as inside a
+`with` handler. Each marker binds **one** construct: the nearest one that can hold it. A
+marker on a construct's first line binds that construct, then a marker written above a
+construct binds it, then a marker inside nested constructs binds the innermost. So a marker
+in an inner `try`'s handler, or above an inner `try`, suppresses that inner `try` and never
+the outer `try` around it. The outer `try` needs its own marker:
+
+```fsharp
+// MGA-ERROR-REPORT-001:ok — the caller reports the failure.
+try
+    try
+        File.Delete path
+    with _ ->
+        // MGA-ERROR-REPORT-001:ok — a best-effort delete.
+        ()
+with _ ->
+    reraise ()
+```
+
 ## License
 
 MIT
