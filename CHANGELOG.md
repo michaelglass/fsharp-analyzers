@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.0-alpha.2 - 2026-10-25
+
 - fix!: a `// {CODE}:ok` marker now binds one construct, the nearest one that can hold it, and never a construct that only encloses it. A marker could sit on any line of a flagged range, and MGA-ERROR-REPORT-001's range is the whole `try … with`, so a marker in an inner `try`'s handler, or above an inner `try`, also silenced every `try` around it: one marker covered two sites, only one of them justified. Binding now ranks the candidates: a construct whose first line the marker is on, then a construct the marker is written above, then the innermost construct whose range holds it. Constructs that tie on all three (two flagged literals on one line) are still bound together. MGA-ERROR-REPORT-001 counts every `try … with` as a candidate, compliant or not, so a marker written for an inner `try` that reports anyway no longer reaches the outer one. Upgrading can surface findings on an outer construct that was relying on a nested construct's marker; give it a marker of its own.
 - refactor!: `Suppression.isLineSuppressed` is replaced by `Suppression.suppressor sourceText code sites`, which takes every site of the rule in the file and returns the suppression test for one finding's range. A single-site check cannot know whether a nearer construct owns the marker.
 
