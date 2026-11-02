@@ -98,4 +98,4 @@ with _ ->
 
 ## License
 
-MIT
+[MPL-2.0](https://mozilla.org/MPL/2.0/)

@@ -24,7 +24,7 @@
     <Version>0.2.0-alpha.2</Version>
     <Authors>Michael Glass</Authors>
     <Description>F# analyzers for common pitfalls: wildcard matches, ignored Tasks, raw SQL, missing error reporting, restricted calls</Description>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/michaelglass/fsharp-analyzers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
